@@ -1,8 +1,10 @@
 package com.vorix.authservice.service.impl;
 
 import com.vorix.authservice.dto.request.LoginRequest;
+import com.vorix.authservice.dto.request.RefreshTokenRequest;
 import com.vorix.authservice.dto.request.RegisterRequest;
 import com.vorix.authservice.dto.response.LoginResponse;
+import com.vorix.authservice.dto.response.RefreshTokenResponse;
 import com.vorix.authservice.dto.response.RegisterResponse;
 import com.vorix.authservice.entity.RefreshToken;
 import com.vorix.authservice.entity.Role;
@@ -11,12 +13,14 @@ import com.vorix.authservice.enums.AuthProvider;
 import com.vorix.authservice.enums.RoleName;
 import com.vorix.authservice.exception.AuthenticationException;
 import com.vorix.authservice.exception.DuplicateResourceException;
+import com.vorix.authservice.exception.RefreshTokenException;
 import com.vorix.authservice.exception.ResourceNotFoundException;
 import com.vorix.authservice.repository.RefreshTokenRepository;
 import com.vorix.authservice.repository.RoleRepository;
 import com.vorix.authservice.repository.UserRepository;
 import com.vorix.authservice.security.jwt.JwtProperties;
 import com.vorix.authservice.security.jwt.JwtService;
+import com.vorix.authservice.security.jwt.JwtTokenType;
 import com.vorix.authservice.security.token.TokenHashService;
 import com.vorix.authservice.service.AuthService;
 import lombok.RequiredArgsConstructor;
@@ -156,5 +160,90 @@ public class AuthServiceImpl implements AuthService {
         log.info("User logged in successfully. UserId={}", user.getId());
 
         return new LoginResponse(accessToken, refreshToken, "Bearer", jwtProperties.accessTokenExpiration() / 1000);
+    }
+
+    @Override
+    @Transactional
+    public RefreshTokenResponse refreshToken(RefreshTokenRequest request) {
+
+        String refreshToken = request.refreshToken();
+
+        if (!jwtService.isTokenValid(refreshToken)) {
+            throw new RefreshTokenException("Invalid refresh token");
+        }
+
+        if (jwtService.extractTokenType(refreshToken) != JwtTokenType.REFRESH) {
+
+            throw new RefreshTokenException("Invalid token type");
+        }
+
+        String tokenHash = tokenHashService.hash(refreshToken);
+
+        RefreshToken storedToken = refreshTokenRepository
+                        .findByTokenHashAndRevokedFalse(tokenHash)
+                        .orElseThrow(() -> new RefreshTokenException("Refresh token not found"));
+
+        Instant now = Instant.now();
+
+        if (storedToken.getExpiresAt().isBefore(now)) {
+
+            throw new RefreshTokenException("Refresh token expired");
+        }
+
+        User user = storedToken.getUser();
+
+        if (user.getProvider() != AuthProvider.LOCAL) {
+
+            throw new RefreshTokenException("Invalid authentication provider");
+        }
+
+        if (!user.isActive()) {
+            throw new RefreshTokenException("Account is inactive");
+        }
+
+        if (user.isAccountLocked()) {
+            throw new RefreshTokenException("Account is locked");
+        }
+
+        if (user.isDeleted()) {
+            throw new RefreshTokenException("Account is deleted");
+        }
+
+        storedToken.setRevoked(true);
+        storedToken.setRevokedAt(now);
+
+        refreshTokenRepository.save(storedToken);
+
+        Set<String> roles = user.getRoles()
+                                .stream()
+                                .map(role -> role.getName().name())
+                                .collect(Collectors.toUnmodifiableSet());
+
+        String newAccessToken = jwtService.generateAccessToken(
+                                user.getId(),
+                                user.getEmail(),
+                                roles
+        );
+
+        String newRefreshToken = jwtService.generateRefreshToken(user.getId());
+
+        RefreshToken newToken =
+                RefreshToken.builder()
+                        .user(user)
+                        .tokenHash(tokenHashService.hash(newRefreshToken))
+                        .expiresAt(now.plusMillis(jwtProperties.refreshTokenExpiration()))
+                        .createdAt(now)
+                        .build();
+
+        refreshTokenRepository.save(newToken);
+
+        log.info("Refresh token rotated successfully. UserId={}", user.getId());
+
+        return new RefreshTokenResponse(
+                newAccessToken,
+                newRefreshToken,
+                "Bearer",
+                jwtProperties.accessTokenExpiration() / 1000
+        );
     }
 }

@@ -1,8 +1,10 @@
 package com.vorix.authservice.controller;
 
 import com.vorix.authservice.dto.request.LoginRequest;
+import com.vorix.authservice.dto.request.RefreshTokenRequest;
 import com.vorix.authservice.dto.request.RegisterRequest;
 import com.vorix.authservice.dto.response.LoginResponse;
+import com.vorix.authservice.dto.response.RefreshTokenResponse;
 import com.vorix.authservice.dto.response.RegisterResponse;
 import com.vorix.authservice.service.AuthService;
 import jakarta.validation.Valid;
@@ -30,6 +32,14 @@ public class AuthController {
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
 
         LoginResponse response = authService.login(request);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<RefreshTokenResponse> refreshToken(@Valid @RequestBody RefreshTokenRequest request) {
+
+        RefreshTokenResponse response = authService.refreshToken(request);
 
         return ResponseEntity.ok(response);
     }

@@ -14,9 +14,11 @@ import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.util.Collection;
 import java.util.Date;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -124,7 +126,7 @@ public class JwtServiceImpl implements JwtService {
 
         } catch (Exception ex) {
 
-            throw new InvalidJwtTokenException("Invalid token type");
+            throw new InvalidJwtTokenException("Invalid token type", ex);
         }
     }
 
@@ -141,5 +143,24 @@ public class JwtServiceImpl implements JwtService {
             log.debug("JWT validation failed: {}", ex.getMessage());
             return false;
         }
+    }
+
+    @Override
+    public Set<String> extractRoles(String token) {
+
+        Object roles = extractAllClaims(token).get("roles");
+
+        if (roles == null) {
+            return Set.of();
+        }
+
+        if (!(roles instanceof Collection<?> collection)) {
+            throw new InvalidJwtTokenException("Invalid roles claim");
+        }
+
+        return collection.stream()
+                .filter(String.class::isInstance)
+                .map(String.class::cast)
+                .collect(Collectors.toUnmodifiableSet());
     }
 }

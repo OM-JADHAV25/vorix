@@ -7,7 +7,13 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Entity
-@Table(name = "refresh_tokens")
+@Table(
+        name = "refresh_tokens",
+        indexes = {
+                @Index(name = "idx_refresh_token_hash", columnList = "token_hash"),
+                @Index(name = "idx_refresh_token_user_id", columnList = "user_id")
+        }
+)
 @Getter
 @Setter
 @Builder
@@ -29,7 +35,12 @@ public class RefreshToken {
     @Column(name = "expires_at", nullable = false)
     private Instant expiresAt;
 
-    private boolean revoked;
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean revoked = false;
+
+    @Column(name = "revoked_at")
+    private Instant revokedAt;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;

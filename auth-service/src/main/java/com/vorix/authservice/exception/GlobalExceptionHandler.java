@@ -114,8 +114,22 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(AuthenticationException.class)
-    public ResponseEntity<ApiErrorResponse> handleAuthenticationException(AuthenticationException ex, HttpServletRequest request
-    ) {
+    public ResponseEntity<ApiErrorResponse> handleAuthenticationException(AuthenticationException ex, HttpServletRequest request) {
+
+        ApiErrorResponse errorResponse =
+                new ApiErrorResponse(
+                        Instant.now(),
+                        HttpStatus.UNAUTHORIZED.value(),
+                        HttpStatus.UNAUTHORIZED.getReasonPhrase(),
+                        ex.getMessage(),
+                        request.getRequestURI()
+                );
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
+    }
+
+    @ExceptionHandler(RefreshTokenException.class)
+    public ResponseEntity<ApiErrorResponse> handleRefreshTokenException(RefreshTokenException ex, HttpServletRequest request) {
 
         ApiErrorResponse errorResponse =
                 new ApiErrorResponse(
