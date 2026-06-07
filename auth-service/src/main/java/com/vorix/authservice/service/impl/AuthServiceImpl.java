@@ -15,9 +15,12 @@ import com.vorix.authservice.exception.ResourceNotFoundException;
 import com.vorix.authservice.repository.RefreshTokenRepository;
 import com.vorix.authservice.repository.RoleRepository;
 import com.vorix.authservice.repository.UserRepository;
+import com.vorix.authservice.security.jwt.JwtProperties;
 import com.vorix.authservice.security.jwt.JwtService;
+import com.vorix.authservice.security.token.TokenHashService;
 import com.vorix.authservice.service.AuthService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +30,9 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import static com.vorix.authservice.security.constants.SecurityConstants.MAX_FAILED_LOGIN_ATTEMPTS;
+
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -37,6 +43,8 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final RefreshTokenRepository refreshTokenRepository;
     private final JwtService jwtService;
+    private final TokenHashService tokenHashService;
+    private final JwtProperties jwtProperties;
 
     @Override
     public RegisterResponse register(RegisterRequest request) {
@@ -62,11 +70,6 @@ public class AuthServiceImpl implements AuthService {
                 .email(request.email())
                 .passwordHash(passwordEncoder.encode(request.password()))
                 .provider(AuthProvider.LOCAL)
-                .emailVerified(false)
-                .active(true)
-                .accountLocked(false)
-                .failedLoginAttempts(0)
-                .deleted(false)
                 .roles(Set.of(userRole))
                 .build();
 
@@ -85,8 +88,12 @@ public class AuthServiceImpl implements AuthService {
     public LoginResponse login(LoginRequest request) {
 
         User user = userRepository.findByEmail(request.email())
-                .orElseThrow(() ->
-                        new AuthenticationException("Invalid email or password"));
+                .orElseThrow(() -> {
+
+                    log.warn("Failed login attempt for email={}", request.email());
+
+                    return new AuthenticationException("Invalid email or password");
+                });
 
         if (!user.isActive()) {
             throw new AuthenticationException("Account is inactive");
@@ -101,8 +108,27 @@ public class AuthServiceImpl implements AuthService {
                 user.getPasswordHash()
         )) {
 
+            int attempts = user.getFailedLoginAttempts() + 1;
+
+            user.setFailedLoginAttempts(attempts);
+
+            if (attempts >= MAX_FAILED_LOGIN_ATTEMPTS) {
+                user.setAccountLocked(true);
+                log.warn("Account locked due to repeated failed login attempts. UserId={}", user.getId());
+            }
+
+            userRepository.save(user);
+
+            log.warn("Failed login attempt for email={}", request.email());
+
             throw new AuthenticationException("Invalid email or password");
         }
+
+        user.setLastLoginAt(Instant.now());
+
+        user.setFailedLoginAttempts(0);
+
+        userRepository.save(user);
 
         Set<String> roles = user.getRoles()
                 .stream()
@@ -118,16 +144,17 @@ public class AuthServiceImpl implements AuthService {
         String refreshToken = jwtService.generateRefreshToken(user.getId());
 
         RefreshToken refreshTokenEntity = RefreshToken.builder()
-                        .id(UUID.randomUUID())
                         .user(user)
-                        .tokenHash(refreshToken)
-                        .expiresAt(Instant.now().plusSeconds(7 * 24 * 60 * 60))
+                        .tokenHash(tokenHashService.hash(refreshToken))
+                         .expiresAt(Instant.now().plusMillis(jwtProperties.refreshTokenExpiration()))
                         .revoked(false)
                         .createdAt(Instant.now())
                         .build();
 
         refreshTokenRepository.save(refreshTokenEntity);
 
-        return new LoginResponse(accessToken, refreshToken, "Bearer", 900L);
+        log.info("User logged in successfully. UserId={}", user.getId());
+
+        return new LoginResponse(accessToken, refreshToken, "Bearer", jwtProperties.accessTokenExpiration() / 1000);
     }
 }
