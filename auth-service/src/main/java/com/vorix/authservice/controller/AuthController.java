@@ -1,6 +1,7 @@
 package com.vorix.authservice.controller;
 
 import com.vorix.authservice.dto.request.LoginRequest;
+import com.vorix.authservice.dto.request.LogoutRequest;
 import com.vorix.authservice.dto.request.RefreshTokenRequest;
 import com.vorix.authservice.dto.request.RegisterRequest;
 import com.vorix.authservice.dto.response.LoginResponse;
@@ -42,5 +43,13 @@ public class AuthController {
         RefreshTokenResponse response = authService.refreshToken(request);
 
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(@Valid @RequestBody LogoutRequest request) {
+
+        authService.logout(request);
+
+        return ResponseEntity.noContent().build();
     }
 }

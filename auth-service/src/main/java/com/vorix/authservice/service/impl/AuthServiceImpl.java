@@ -1,6 +1,7 @@
 package com.vorix.authservice.service.impl;
 
 import com.vorix.authservice.dto.request.LoginRequest;
+import com.vorix.authservice.dto.request.LogoutRequest;
 import com.vorix.authservice.dto.request.RefreshTokenRequest;
 import com.vorix.authservice.dto.request.RegisterRequest;
 import com.vorix.authservice.dto.response.LoginResponse;
@@ -23,6 +24,7 @@ import com.vorix.authservice.security.jwt.JwtService;
 import com.vorix.authservice.security.jwt.JwtTokenType;
 import com.vorix.authservice.security.token.TokenHashService;
 import com.vorix.authservice.service.AuthService;
+import com.vorix.authservice.service.TokenSecurityService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -30,6 +32,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -49,6 +52,7 @@ public class AuthServiceImpl implements AuthService {
     private final JwtService jwtService;
     private final TokenHashService tokenHashService;
     private final JwtProperties jwtProperties;
+    private final TokenSecurityService tokenSecurityService;
 
     @Override
     public RegisterResponse register(RegisterRequest request) {
@@ -88,7 +92,6 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    @Transactional
     public LoginResponse login(LoginRequest request) {
 
         User user = userRepository.findByEmail(request.email())
@@ -116,6 +119,8 @@ public class AuthServiceImpl implements AuthService {
 
             user.setFailedLoginAttempts(attempts);
 
+            log.warn("Failed login attempt {} for userId={}", attempts, user.getId());
+
             if (attempts >= MAX_FAILED_LOGIN_ATTEMPTS) {
                 user.setAccountLocked(true);
                 log.warn("Account locked due to repeated failed login attempts. UserId={}", user.getId());
@@ -128,7 +133,9 @@ public class AuthServiceImpl implements AuthService {
             throw new AuthenticationException("Invalid email or password");
         }
 
-        user.setLastLoginAt(Instant.now());
+        Instant now = Instant.now();
+
+        user.setLastLoginAt(now);
 
         user.setFailedLoginAttempts(0);
 
@@ -150,9 +157,9 @@ public class AuthServiceImpl implements AuthService {
         RefreshToken refreshTokenEntity = RefreshToken.builder()
                         .user(user)
                         .tokenHash(tokenHashService.hash(refreshToken))
-                         .expiresAt(Instant.now().plusMillis(jwtProperties.refreshTokenExpiration()))
+                         .expiresAt(now.plusMillis(jwtProperties.refreshTokenExpiration()))
                         .revoked(false)
-                        .createdAt(Instant.now())
+                        .createdAt(now)
                         .build();
 
         refreshTokenRepository.save(refreshTokenEntity);
@@ -163,7 +170,6 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    @Transactional
     public RefreshTokenResponse refreshToken(RefreshTokenRequest request) {
 
         String refreshToken = request.refreshToken();
@@ -180,8 +186,19 @@ public class AuthServiceImpl implements AuthService {
         String tokenHash = tokenHashService.hash(refreshToken);
 
         RefreshToken storedToken = refreshTokenRepository
-                        .findByTokenHashAndRevokedFalse(tokenHash)
-                        .orElseThrow(() -> new RefreshTokenException("Refresh token not found"));
+                                  .findByTokenHash(tokenHash)
+                                  .orElseThrow(() -> new RefreshTokenException("Refresh token not found"));
+
+        if (storedToken.isRevoked()) {
+
+            UUID userId = storedToken.getUser().getId();
+
+            tokenSecurityService.revokeAllActiveRefreshTokens(userId);
+
+            log.error("Refresh token reuse detected. UserId={}", userId);
+
+            throw new RefreshTokenException("Refresh token reuse detected. Please login again.");
+        }
 
         Instant now = Instant.now();
 
@@ -232,6 +249,7 @@ public class AuthServiceImpl implements AuthService {
                         .user(user)
                         .tokenHash(tokenHashService.hash(newRefreshToken))
                         .expiresAt(now.plusMillis(jwtProperties.refreshTokenExpiration()))
+                        .revoked(false)
                         .createdAt(now)
                         .build();
 
@@ -245,5 +263,24 @@ public class AuthServiceImpl implements AuthService {
                 "Bearer",
                 jwtProperties.accessTokenExpiration() / 1000
         );
+    }
+
+    @Override
+    public void logout(LogoutRequest request) {
+
+        String refreshToken = request.refreshToken();
+
+        String tokenHash = tokenHashService.hash(refreshToken);
+
+        RefreshToken storedToken = refreshTokenRepository
+                                   .findByTokenHashAndRevokedFalse(tokenHash)
+                                   .orElseThrow(() -> new RefreshTokenException("Refresh token not found"));
+
+        storedToken.setRevoked(true);
+        storedToken.setRevokedAt(Instant.now());
+
+        refreshTokenRepository.save(storedToken);
+
+        log.info("User logged out successfully. UserId={}", storedToken.getUser().getId());
     }
 }
