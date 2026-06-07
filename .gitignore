@@ -1,0 +1,25 @@
+# IntelliJ
+.idea/
+
+# Build
+target/
+
+# Logs
+logs/
+*.log
+
+# Env
+.env
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Maven Wrapper Cache
+.mvn/wrapper/maven-wrapper.jar
+
+# Generated
+out/
+
+# Docker
+postgres-data/

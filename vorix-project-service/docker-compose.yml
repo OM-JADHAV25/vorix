@@ -1,0 +1,41 @@
+services:
+
+  postgres:
+
+    image: postgres:16
+
+    container_name: vorix-postgres
+
+    environment:
+      POSTGRES_DB: vorix_project_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  project-service:
+
+    build: .
+
+    container_name: vorix-project-service
+
+    ports:
+      - "8081:8081"
+
+    depends_on:
+      - postgres
+
+    environment:
+
+      SPRING_PROFILES_ACTIVE: prod
+
+      DB_URL: jdbc:postgresql://postgres:5432/vorix_project_db
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+
+volumes:
+  postgres-data:
