@@ -10,23 +10,13 @@ import java.util.Optional;
 
 public interface ProjectRepository extends JpaRepository<Project, Long> {
 
-    boolean existsByGithubUrl(
-            String githubUrl
-    );
+    boolean existsByGithubUrl(String githubUrl);
 
-    Optional<Project> findByGithubUrl(
-            String githubUrl
-    );
+    Optional<Project> findByGithubUrl(String githubUrl);
 
-    Page<Project> findByStatusNot(
-            ProjectStatus status,
-            Pageable pageable
-    );
+    Page<Project> findByStatusNot(ProjectStatus status, Pageable pageable);
 
-    Optional<Project> findByIdAndStatusNot(
-            Long id,
-            ProjectStatus status
-    );
+    Optional<Project> findByIdAndStatusNot(Long id, ProjectStatus status);
 
     Page<Project> findByStatusNotAndProjectNameContainingIgnoreCase(
             ProjectStatus excludedStatus,

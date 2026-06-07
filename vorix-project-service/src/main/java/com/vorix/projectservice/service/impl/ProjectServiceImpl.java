@@ -23,8 +23,7 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class ProjectServiceImpl
-        implements ProjectService {
+public class ProjectServiceImpl implements ProjectService {
 
     private final ProjectRepository projectRepository;
 
@@ -32,23 +31,17 @@ public class ProjectServiceImpl
 
     @Override
     @Transactional
-    public ProjectResponse createProject(
-            CreateProjectRequest request
-    ) {
+    public ProjectResponse createProject(CreateProjectRequest request) {
 
         log.info("Creating project with name: {}", request.projectName());
 
         String githubUrl = request.githubUrl();
 
-        if (
-                githubUrl != null && !githubUrl.isBlank() && projectRepository.existsByGithubUrl(githubUrl)
-        ) {
+        if (githubUrl != null && !githubUrl.isBlank() && projectRepository.existsByGithubUrl(githubUrl)) {
 
             log.warn("Duplicate github URL found: {}", githubUrl);
 
-            throw new DuplicateResourceException(
-                    "Project with this GitHub URL already exists"
-            );
+            throw new DuplicateResourceException("Project with this GitHub URL already exists");
 
         }
 
@@ -69,9 +62,7 @@ public class ProjectServiceImpl
 
 
     @Override
-    public ProjectResponse getProjectById(
-            Long id
-    ) {
+    public ProjectResponse getProjectById(Long id) {
 
         log.info("Fetching project with id: {}", id);
 
@@ -139,18 +130,13 @@ public class ProjectServiceImpl
 
     @Override
     @Transactional
-    public ProjectResponse updateProject(
-            Long id,
-            UpdateProjectRequest request
-    ) {
+    public ProjectResponse updateProject(Long id, UpdateProjectRequest request) {
 
         log.info("Updating project with id: {}", id);
 
         Project project = projectRepository
                         .findByIdAndStatusNot(id, ProjectStatus.DELETED)
-                        .orElseThrow(() ->
-                                new ResourceNotFoundException("Project not found")
-                        );
+                        .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
 
         String githubUrl = request.githubUrl();
 
@@ -164,7 +150,6 @@ public class ProjectServiceImpl
                         githubUrl
                 )
         ) {
-
             throw new DuplicateResourceException("Project already exists");
         }
 
@@ -181,17 +166,13 @@ public class ProjectServiceImpl
 
     @Override
     @Transactional
-    public void softDeleteProject(
-            Long id
-    ) {
+    public void softDeleteProject(Long id) {
 
         log.info("Soft deleting project with id: {}", id);
 
         Project project = projectRepository
                 .findByIdAndStatusNot(id, ProjectStatus.DELETED)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Project not found")
-                );
+                .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
 
         project.setStatus(ProjectStatus.DELETED);
 
@@ -205,17 +186,13 @@ public class ProjectServiceImpl
 
     @Override
     @Transactional
-    public void hardDeleteProject(
-            Long id
-    ) {
+    public void hardDeleteProject(Long id) {
 
         log.warn("Hard deleting project with id: {}", id);
 
         Project project = projectRepository
                         .findById(id)
-                        .orElseThrow(() ->
-                                new ResourceNotFoundException("Project not found")
-                        );
+                        .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
 
         projectRepository.delete(project);
 

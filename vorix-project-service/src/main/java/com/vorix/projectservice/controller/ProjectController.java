@@ -32,14 +32,9 @@ public class ProjectController {
             CreateProjectRequest request
     ) {
 
-        ProjectResponse response = projectService.createProject(
-                request
-        );
+        ProjectResponse response = projectService.createProject(request);
 
-        return ApiResponse.success(
-                "Project created successfully",
-                response
-        );
+        return ApiResponse.success("Project created successfully", response);
     }
 
 

@@ -14,90 +14,47 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(
-            ResourceNotFoundException.class
-    )
-    public ResponseEntity<ErrorResponse>
-    handleResourceNotFoundException(
-            ResourceNotFoundException exception
-    ) {
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleResourceNotFoundException(ResourceNotFoundException exception) {
 
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
-                .body(
-                        ErrorResponse.of(
-                                exception.getMessage(),
-                                "RESOURCE_NOT_FOUND"
-                        )
-                );
+                .body(ErrorResponse.of(exception.getMessage(), "RESOURCE_NOT_FOUND"));
     }
 
 
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse>
-    handleGlobalException(
-            Exception exception
-    ) {
+    public ResponseEntity<ErrorResponse> handleGlobalException(Exception exception) {
 
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(
-                        ErrorResponse.of(
-                                "Something went wrong",
-                                "INTERNAL_SERVER_ERROR"
-                        )
-                );
+                .body(ErrorResponse.of("Something went wrong", "INTERNAL_SERVER_ERROR"));
     }
 
 
 
-    @ExceptionHandler(
-            MethodArgumentNotValidException.class
-    )
-    public ResponseEntity<ValidationErrorResponse>
-    handleValidationException(
-            MethodArgumentNotValidException exception
-    ) {
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ValidationErrorResponse> handleValidationException(MethodArgumentNotValidException exception) {
 
-        Map<String, String> errors =
-                new HashMap<>();
+        Map<String, String> errors = new HashMap<>();
 
         exception.getBindingResult()
                 .getFieldErrors()
-                .forEach(error ->
-                        errors.put(
-                                error.getField(),
-                                error.getDefaultMessage()
-                        )
-                );
+                .forEach(error -> errors.put(error.getField(), error.getDefaultMessage()));
 
         return ResponseEntity
                 .badRequest()
-                .body(
-                        ValidationErrorResponse.of(
-                                errors
-                        )
-                );
+                .body(ValidationErrorResponse.of(errors));
     }
 
 
 
-    @ExceptionHandler(
-            DuplicateResourceException.class
-    )
-    public ResponseEntity<ErrorResponse>
-    handleDuplicateResourceException(
-            DuplicateResourceException exception
-    ) {
+    @ExceptionHandler(DuplicateResourceException.class)
+    public ResponseEntity<ErrorResponse> handleDuplicateResourceException(DuplicateResourceException exception) {
 
         return ResponseEntity
                 .status(HttpStatus.CONFLICT)
-                .body(
-                        ErrorResponse.of(
-                                exception.getMessage(),
-                                "DUPLICATE_RESOURCE"
-                        )
-                );
+                .body(ErrorResponse.of(exception.getMessage(), "DUPLICATE_RESOURCE"));
     }
 }

@@ -29,15 +29,13 @@ class ProjectControllerIntegrationTest {
     void shouldCreateProjectSuccessfully()
             throws Exception {
 
-        CreateProjectRequest request =
-                new CreateProjectRequest(
+        CreateProjectRequest request = new CreateProjectRequest(
                         "Integration Test",
                         "Testing",
                         "https://github.com/test/integration"
-                );
+        );
 
-        mockMvc.perform(
-                        post("/api/v1/projects")
+        mockMvc.perform(post("/api/v1/projects")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request))
                 )

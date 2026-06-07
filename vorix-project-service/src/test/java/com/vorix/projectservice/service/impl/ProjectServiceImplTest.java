@@ -33,42 +33,33 @@ class ProjectServiceImplTest {
     @BeforeEach
     void setUp() {
 
-        projectService =
-                new ProjectServiceImpl(
+        projectService = new ProjectServiceImpl(
                         projectRepository,
                         projectMapper
-                );
+        );
     }
 
     @Test
     void shouldCreateProjectSuccessfully() {
 
-        CreateProjectRequest request =
-                new CreateProjectRequest(
+        CreateProjectRequest request = new CreateProjectRequest(
                         "Vorix Backend",
                         "AI backend",
                         "https://github.com/test"
-                );
+        );
 
-        Project project =
-                Project.builder()
+        Project project = Project.builder()
                         .projectName(request.projectName())
                         .description(request.description())
                         .githubUrl(request.githubUrl())
                         .status(ProjectStatus.ACTIVE)
                         .build();
 
-        when(
-                projectRepository
-                        .existsByGithubUrl(request.githubUrl())
-        ).thenReturn(false);
+        when(projectRepository.existsByGithubUrl(request.githubUrl())).thenReturn(false);
 
-        when(
-                projectRepository.save(any(Project.class))
-        ).thenReturn(project);
+        when(projectRepository.save(any(Project.class))).thenReturn(project);
 
-        ProjectResponse response =
-                projectService.createProject(request);
+        ProjectResponse response = projectService.createProject(request);
 
         assertNotNull(response);
 
@@ -78,60 +69,40 @@ class ProjectServiceImplTest {
 
         assertEquals("https://github.com/test", response.githubUrl());
 
-        verify(projectRepository, times(1)
-        ).existsByGithubUrl(request.githubUrl());
+        verify(projectRepository, times(1)).existsByGithubUrl(request.githubUrl());
 
-        verify(projectRepository, times(1)
-        ).save(any(Project.class));
+        verify(projectRepository, times(1)).save(any(Project.class));
     }
 
 
     @Test
     void shouldThrowExceptionWhenGithubUrlAlreadyExists() {
 
-        CreateProjectRequest request =
-                new CreateProjectRequest(
+        CreateProjectRequest request = new CreateProjectRequest(
                         "Vorix Backend",
                         "AI backend",
                         "https://github.com/test"
-                );
-
-        when(
-                projectRepository
-                        .existsByGithubUrl(
-                                request.githubUrl()
-                        )
-        ).thenReturn(true);
-
-        assertThrows(
-                DuplicateResourceException.class,
-                () -> projectService
-                        .createProject(request)
         );
 
-        verify(projectRepository,
-                never()).save(any());
+        when(projectRepository.existsByGithubUrl(request.githubUrl())).thenReturn(true);
+
+        assertThrows(DuplicateResourceException.class, () -> projectService.createProject(request));
+
+        verify(projectRepository, never()).save(any());
     }
 
 
     @Test
     void shouldGetProjectByIdSuccessfully() {
 
-        Project project =
-                Project.builder()
+        Project project = Project.builder()
                         .projectName("Vorix")
                         .description("Backend")
                         .githubUrl("https://github.com/test")
                         .status(ProjectStatus.ACTIVE)
                         .build();
 
-        when(
-                projectRepository
-                        .findByIdAndStatusNot(
-                                1L,
-                                ProjectStatus.DELETED
-                        )
-        ).thenReturn(java.util.Optional.of(project));
+        when(projectRepository.findByIdAndStatusNot(1L, ProjectStatus.DELETED)).thenReturn(java.util.Optional.of(project));
 
         ProjectResponse response = projectService.getProjectById(1L);
 
@@ -144,35 +115,21 @@ class ProjectServiceImplTest {
     @Test
     void shouldThrowExceptionWhenProjectNotFound() {
 
-        when(
-                projectRepository
-                        .findByIdAndStatusNot(
-                                1L,
-                                ProjectStatus.DELETED
-                        )
-        ).thenReturn(java.util.Optional.empty());
+        when(projectRepository.findByIdAndStatusNot(1L, ProjectStatus.DELETED)).thenReturn(java.util.Optional.empty());
 
-        assertThrows(
-                ResourceNotFoundException.class,
-                () -> projectService
-                        .getProjectById(1L)
-        );
+        assertThrows(ResourceNotFoundException.class, () -> projectService.getProjectById(1L));
     }
 
 
     @Test
     void shouldSoftDeleteProjectSuccessfully() {
 
-        Project project =
-                Project.builder()
+        Project project = Project.builder()
                         .projectName("Vorix")
                         .status(ProjectStatus.ACTIVE)
                         .build();
 
-        when(
-                projectRepository
-                        .findByIdAndStatusNot(1L, ProjectStatus.DELETED)
-        ).thenReturn(java.util.Optional.of(project));
+        when(projectRepository.findByIdAndStatusNot(1L, ProjectStatus.DELETED)).thenReturn(java.util.Optional.of(project));
 
         projectService.softDeleteProject(1L);
 
@@ -185,16 +142,12 @@ class ProjectServiceImplTest {
     @Test
     void shouldHardDeleteProjectSuccessfully() {
 
-        Project project =
-                Project.builder()
+        Project project = Project.builder()
                         .projectName("Vorix")
                         .status(ProjectStatus.ACTIVE)
                         .build();
 
-        when(
-                projectRepository
-                        .findById(1L)
-        ).thenReturn(java.util.Optional.of(project));
+        when(projectRepository.findById(1L)).thenReturn(java.util.Optional.of(project));
 
         projectService.hardDeleteProject(1L);
 

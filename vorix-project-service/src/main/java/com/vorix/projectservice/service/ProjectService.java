@@ -10,13 +10,9 @@ import java.util.List;
 
 public interface ProjectService {
 
-    ProjectResponse createProject(
-            CreateProjectRequest request
-    );
+    ProjectResponse createProject(CreateProjectRequest request);
 
-    ProjectResponse getProjectById(
-            Long id
-    );
+    ProjectResponse getProjectById(Long id);
 
     Page<ProjectResponse> getAllProjects(
             String search,
@@ -27,16 +23,9 @@ public interface ProjectService {
             String direction
     );
 
-    ProjectResponse updateProject(
-            Long id,
-            UpdateProjectRequest request
-    );
+    ProjectResponse updateProject(Long id, UpdateProjectRequest request);
 
-    void softDeleteProject(
-            Long id
-    );
+    void softDeleteProject(Long id);
 
-    void hardDeleteProject(
-            Long id
-    );
+    void hardDeleteProject(Long id);
 }

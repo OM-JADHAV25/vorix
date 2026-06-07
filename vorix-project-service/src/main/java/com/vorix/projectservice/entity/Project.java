@@ -11,8 +11,7 @@ import lombok.*;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Project
-        extends BaseEntity {
+public class Project extends BaseEntity {
 
     @Column(nullable = false)
     private String projectName;
@@ -23,9 +22,7 @@ public class Project
     @Column(unique = true)
     private String githubUrl;
 
-    @Enumerated(
-            EnumType.STRING
-    )
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ProjectStatus status;
 }

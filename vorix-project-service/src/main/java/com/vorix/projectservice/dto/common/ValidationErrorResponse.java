@@ -18,9 +18,7 @@ public record ValidationErrorResponse(
 
 ) {
 
-    public static ValidationErrorResponse of(
-            Map<String, String> errors
-    ) {
+    public static ValidationErrorResponse of(Map<String, String> errors) {
 
         return ValidationErrorResponse.builder()
                 .success(false)

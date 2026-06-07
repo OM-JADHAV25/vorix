@@ -29,9 +29,7 @@ public class HealthController {
     @GetMapping("/error-test")
     public void errorTest() {
 
-        throw new ResourceNotFoundException(
-                "Project not found"
-        );
+        throw new ResourceNotFoundException("Project not found");
     }
 
     @PostMapping("/validate-test")
@@ -41,9 +39,6 @@ public class HealthController {
             CreateProjectRequest request
     ) {
 
-        return ApiResponse.success(
-                "Validation successful",
-                request.projectName()
-        );
+        return ApiResponse.success("Validation successful", request.projectName());
     }
 }

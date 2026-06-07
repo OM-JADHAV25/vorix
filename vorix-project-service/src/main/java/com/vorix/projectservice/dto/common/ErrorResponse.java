@@ -16,10 +16,7 @@ public record ErrorResponse(
 
 ) {
 
-    public static ErrorResponse of(
-            String message,
-            String errorCode
-    ) {
+    public static ErrorResponse of(String message, String errorCode) {
 
         return ErrorResponse.builder()
                 .success(false)
