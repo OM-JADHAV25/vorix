@@ -9,9 +9,9 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.vorix</groupId>
-	<artifactId>vorix-project-service</artifactId>
+    <artifactId>project-service</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name/>
+	<name>project-service</name>
 	<description/>
 	<url/>
 	<licenses>
