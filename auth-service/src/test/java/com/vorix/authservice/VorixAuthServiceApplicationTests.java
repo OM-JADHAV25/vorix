@@ -1,0 +1,13 @@
+package com.vorix.authservice;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+
+@SpringBootTest
+class VorixAuthServiceApplicationTests {
+
+	@Test
+	void contextLoads() {
+	}
+
+}

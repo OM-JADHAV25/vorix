@@ -1,3 +1,4 @@
+# Maven
 HELP.md
 target/
 .mvn/wrapper/maven-wrapper.jar
@@ -18,6 +19,7 @@ target/
 *.iws
 *.iml
 *.ipr
+out/
 
 ### NetBeans ###
 /nbproject/private/
@@ -36,15 +38,23 @@ build/
 logs/
 *.log
 
-# Environment files
+# Environment Variables
 .env
 .env.*
+!.env.example
 
-# Local Spring configs
+# Application Local Configs
 application-local.yml
+application-secrets.yml
 
 # OS files
 .DS_Store
 Thumbs.db
 
+# Docker
+docker-data/
+postgres-data/
 
+# Temporary Files
+*.tmp
+*.temp

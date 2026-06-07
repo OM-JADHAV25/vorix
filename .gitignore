@@ -1,5 +1,18 @@
-# IntelliJ
-.idea/
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+out/
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
 
 # Build
 target/
@@ -10,6 +23,7 @@ logs/
 
 # Env
 .env
+.env.*
 
 # OS
 .DS_Store
@@ -22,4 +36,12 @@ Thumbs.db
 out/
 
 # Docker
+docker-data/
 postgres-data/
+
+# Temporary Files
+*.tmp
+*.temp
+
+#VS Code
+.vscode/
