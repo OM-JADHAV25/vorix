@@ -8,6 +8,8 @@ import com.vorix.authservice.dto.response.RegisterResponse;
 import com.vorix.authservice.entity.*;
 import com.vorix.authservice.enums.AuthProvider;
 import com.vorix.authservice.enums.RoleName;
+import com.vorix.authservice.event.EmailVerificationEvent;
+import com.vorix.authservice.event.PasswordResetEmailEvent;
 import com.vorix.authservice.exception.*;
 import com.vorix.authservice.repository.*;
 import com.vorix.authservice.security.jwt.JwtProperties;
@@ -17,6 +19,7 @@ import com.vorix.authservice.security.token.TokenHashService;
 import com.vorix.authservice.service.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -49,6 +52,7 @@ public class AuthServiceImpl implements AuthService {
     private final AppProperties appProperties;
     private final PasswordResetTokenService passwordResetTokenService;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     @Override
     public RegisterResponse register(RegisterRequest request) {
@@ -82,7 +86,7 @@ public class AuthServiceImpl implements AuthService {
         String verificationToken = verificationTokenService.createEmailVerificationToken(savedUser);
 
         String verificationUrl = appProperties.frontendUrl() + "/verify-email?token=" + verificationToken;
-        emailService.sendVerificationEmail(savedUser.getEmail(), verificationUrl);
+        applicationEventPublisher.publishEvent(new EmailVerificationEvent(savedUser.getEmail(), verificationUrl));
 
         return new RegisterResponse(
                 savedUser.getId(),
@@ -361,7 +365,7 @@ public class AuthServiceImpl implements AuthService {
 
         log.info("About to send password reset email");
 
-        emailService.sendPasswordResetEmail(user.getEmail(), resetUrl);
+        applicationEventPublisher.publishEvent(new PasswordResetEmailEvent(user.getEmail(), resetUrl));
 
         log.info("Password reset email sent. UserId={}", user.getId());
     }
