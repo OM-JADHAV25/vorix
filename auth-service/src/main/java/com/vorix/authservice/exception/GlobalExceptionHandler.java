@@ -157,4 +157,19 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }
+
+    @ExceptionHandler(PasswordResetException.class)
+    public ResponseEntity<ApiErrorResponse> handlePasswordResetException(PasswordResetException ex, HttpServletRequest request) {
+
+        ApiErrorResponse errorResponse =
+                new ApiErrorResponse(
+                        Instant.now(),
+                        HttpStatus.BAD_REQUEST.value(),
+                        HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                        ex.getMessage(),
+                        request.getRequestURI()
+                );
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    }
 }

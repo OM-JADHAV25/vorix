@@ -1,9 +1,6 @@
 package com.vorix.authservice.service;
 
-import com.vorix.authservice.dto.request.LoginRequest;
-import com.vorix.authservice.dto.request.LogoutRequest;
-import com.vorix.authservice.dto.request.RefreshTokenRequest;
-import com.vorix.authservice.dto.request.RegisterRequest;
+import com.vorix.authservice.dto.request.*;
 import com.vorix.authservice.dto.response.LoginResponse;
 import com.vorix.authservice.dto.response.RefreshTokenResponse;
 import com.vorix.authservice.dto.response.RegisterResponse;
@@ -19,4 +16,8 @@ public interface AuthService {
     void logout(LogoutRequest request);
 
     void verifyEmail(String token);
+
+    void forgotPassword(ForgotPasswordRequest request);
+
+    void resetPassword(ResetPasswordRequest request);
 }

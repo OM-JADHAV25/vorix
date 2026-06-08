@@ -1,32 +1,20 @@
 package com.vorix.authservice.service.impl;
 
 import com.vorix.authservice.config.AppProperties;
-import com.vorix.authservice.dto.request.LoginRequest;
-import com.vorix.authservice.dto.request.LogoutRequest;
-import com.vorix.authservice.dto.request.RefreshTokenRequest;
-import com.vorix.authservice.dto.request.RegisterRequest;
+import com.vorix.authservice.dto.request.*;
 import com.vorix.authservice.dto.response.LoginResponse;
 import com.vorix.authservice.dto.response.RefreshTokenResponse;
 import com.vorix.authservice.dto.response.RegisterResponse;
-import com.vorix.authservice.entity.EmailVerificationToken;
-import com.vorix.authservice.entity.RefreshToken;
-import com.vorix.authservice.entity.Role;
-import com.vorix.authservice.entity.User;
+import com.vorix.authservice.entity.*;
 import com.vorix.authservice.enums.AuthProvider;
 import com.vorix.authservice.enums.RoleName;
 import com.vorix.authservice.exception.*;
-import com.vorix.authservice.repository.EmailVerificationTokenRepository;
-import com.vorix.authservice.repository.RefreshTokenRepository;
-import com.vorix.authservice.repository.RoleRepository;
-import com.vorix.authservice.repository.UserRepository;
+import com.vorix.authservice.repository.*;
 import com.vorix.authservice.security.jwt.JwtProperties;
 import com.vorix.authservice.security.jwt.JwtService;
 import com.vorix.authservice.security.jwt.JwtTokenType;
 import com.vorix.authservice.security.token.TokenHashService;
-import com.vorix.authservice.service.AuthService;
-import com.vorix.authservice.service.EmailService;
-import com.vorix.authservice.service.TokenSecurityService;
-import com.vorix.authservice.service.VerificationTokenService;
+import com.vorix.authservice.service.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -59,6 +47,8 @@ public class AuthServiceImpl implements AuthService {
     private final EmailService emailService;
     private final EmailVerificationTokenRepository emailVerificationTokenRepository;
     private final AppProperties appProperties;
+    private final PasswordResetTokenService passwordResetTokenService;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
 
     @Override
     public RegisterResponse register(RegisterRequest request) {
@@ -331,5 +321,103 @@ public class AuthServiceImpl implements AuthService {
         emailVerificationTokenRepository.save(verificationToken);
 
         log.info("Email verified successfully. UserId={}", user.getId());
+    }
+
+    @Override
+    public void forgotPassword(ForgotPasswordRequest request) {
+
+        log.info("FORGOT PASSWORD CALLED: {}", request.email());
+
+        User user = userRepository.findByEmail(request.email()).orElse(null);
+
+        /*
+         * IMPORTANT:
+         * Never reveal whether email exists.
+         */
+
+        if (user == null) {
+
+            log.info("Password reset requested for non-existing email={}", request.email());
+            return;
+        }
+
+        if (user.isDeleted()) {
+            return;
+        }
+
+        if (!user.isActive()) {
+            return;
+        }
+
+        log.info("User found: {}", user.getEmail());
+
+        String rawToken = passwordResetTokenService.createPasswordResetToken(user);
+
+        log.info("Token created");
+
+        String resetUrl = appProperties.frontendUrl()
+                        + "/reset-password?token="
+                        + rawToken;
+
+        log.info("About to send password reset email");
+
+        emailService.sendPasswordResetEmail(user.getEmail(), resetUrl);
+
+        log.info("Password reset email sent. UserId={}", user.getId());
+    }
+
+    @Override
+    public void resetPassword(ResetPasswordRequest request) {
+
+        String tokenHash =
+                tokenHashService.hash(
+                        request.token()
+                );
+
+        PasswordResetToken resetToken = passwordResetTokenRepository
+                                       .findByTokenHash(tokenHash)
+                                       .orElseThrow(() -> new PasswordResetException("Invalid password reset token"));
+
+        Instant now = Instant.now();
+
+        if (resetToken.isConsumed()) {
+
+            throw new PasswordResetException("Password reset token already used");
+        }
+
+        if (resetToken.getExpiresAt().isBefore(now)) {
+
+            throw new PasswordResetException("Password reset token expired");
+        }
+
+        User user = resetToken.getUser();
+
+        if (user.isDeleted()) {
+
+            throw new PasswordResetException("Account is deleted");
+        }
+
+        if (!user.isActive()) {
+
+            throw new PasswordResetException("Account is inactive");
+        }
+
+        String encodedPassword = passwordEncoder.encode(request.newPassword());
+
+        user.setPasswordHash(encodedPassword);
+
+        user.setFailedLoginAttempts(0);
+
+        userRepository.save(user);
+
+        resetToken.setConsumed(true);
+
+        resetToken.setUsedAt(now);
+
+        passwordResetTokenRepository.save(resetToken);
+
+        tokenSecurityService.revokeAllActiveRefreshTokens(user.getId());
+
+        log.info("Password reset completed successfully. UserId={}", user.getId());
     }
 }

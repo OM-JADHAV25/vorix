@@ -6,7 +6,6 @@ spring:
     url: ${DB_URL}
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
-
   jpa:
     hibernate:
       ddl-auto: validate
@@ -35,8 +34,12 @@ server:
 
 jwt:
   secret: ${JWT_SECRET}
-  access-token-expiration: 900000
-  refresh-token-expiration: 604800000
+  access-token-expiration: 900000         # 15 minutes in milliseconds
+  refresh-token-expiration: 604800000     # 7 days in milliseconds
 
 app:
   frontend-url: http://localhost:3001
+
+security:
+  password-reset-token-expiration: 900000           # 15 minutes in milliseconds
+  email-verification-token-expiration: 86400000     # 24 hours in milliseconds

@@ -1,9 +1,6 @@
 package com.vorix.authservice.controller;
 
-import com.vorix.authservice.dto.request.LoginRequest;
-import com.vorix.authservice.dto.request.LogoutRequest;
-import com.vorix.authservice.dto.request.RefreshTokenRequest;
-import com.vorix.authservice.dto.request.RegisterRequest;
+import com.vorix.authservice.dto.request.*;
 import com.vorix.authservice.dto.response.LoginResponse;
 import com.vorix.authservice.dto.response.RefreshTokenResponse;
 import com.vorix.authservice.dto.response.RegisterResponse;
@@ -59,5 +56,21 @@ public class AuthController {
         authService.verifyEmail(token);
 
         return ResponseEntity.ok("Email verified successfully");
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<String> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+
+        authService.forgotPassword(request);
+
+        return ResponseEntity.ok("If an account exists for this email, a password reset link has been sent.");
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<String> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+
+        authService.resetPassword(request);
+
+        return ResponseEntity.ok("Password reset successfully");
     }
 }

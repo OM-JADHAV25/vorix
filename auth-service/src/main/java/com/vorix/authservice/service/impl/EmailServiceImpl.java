@@ -44,4 +44,28 @@ public class EmailServiceImpl implements EmailService {
 
         sendPlainTextEmail(email, "Verify Your Vorix Account", body);
     }
+
+    @Override
+    public void sendPasswordResetEmail(String email, String resetUrl) {
+
+        String body = """
+            We received a request to reset your password.
+
+            Use the link below:
+
+            %s
+
+            This link expires in 1 hour.
+
+            If you did not request this change,
+            you can safely ignore this email.
+            """
+                .formatted(resetUrl);
+
+        sendPlainTextEmail(
+                email,
+                "Reset Your Vorix Password",
+                body
+        );
+    }
 }
