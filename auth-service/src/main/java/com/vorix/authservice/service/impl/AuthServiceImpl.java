@@ -8,6 +8,7 @@ import com.vorix.authservice.dto.response.RegisterResponse;
 import com.vorix.authservice.entity.*;
 import com.vorix.authservice.enums.AuthProvider;
 import com.vorix.authservice.enums.RoleName;
+import com.vorix.authservice.enums.SecurityEventType;
 import com.vorix.authservice.event.EmailVerificationEvent;
 import com.vorix.authservice.event.PasswordResetEmailEvent;
 import com.vorix.authservice.exception.*;
@@ -25,7 +26,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -47,12 +47,12 @@ public class AuthServiceImpl implements AuthService {
     private final JwtProperties jwtProperties;
     private final TokenSecurityService tokenSecurityService;
     private final VerificationTokenService verificationTokenService;
-    private final EmailService emailService;
     private final EmailVerificationTokenRepository emailVerificationTokenRepository;
     private final AppProperties appProperties;
     private final PasswordResetTokenService passwordResetTokenService;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final ApplicationEventPublisher applicationEventPublisher;
+    private final AuditService auditService;
 
     @Override
     public RegisterResponse register(RegisterRequest request) {
@@ -88,6 +88,12 @@ public class AuthServiceImpl implements AuthService {
         String verificationUrl = appProperties.frontendUrl() + "/verify-email?token=" + verificationToken;
         applicationEventPublisher.publishEvent(new EmailVerificationEvent(savedUser.getEmail(), verificationUrl));
 
+        auditService.log(
+                savedUser.getId(),
+                SecurityEventType.EMAIL_VERIFICATION_REQUESTED,
+                "Email verification requested"
+        );
+
         return new RegisterResponse(
                 savedUser.getId(),
                 savedUser.getUsername(),
@@ -101,6 +107,12 @@ public class AuthServiceImpl implements AuthService {
 
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> {
+
+                    auditService.log(
+                            null,
+                            SecurityEventType.LOGIN_FAILED,
+                            "Failed login attempt for email=" + request.email()
+                    );
 
                     log.warn("Failed login attempt for email={}", request.email());
 
@@ -128,12 +140,25 @@ public class AuthServiceImpl implements AuthService {
 
             if (attempts >= MAX_FAILED_LOGIN_ATTEMPTS) {
                 user.setAccountLocked(true);
+
+                auditService.log(
+                        user.getId(),
+                        SecurityEventType.ACCOUNT_LOCKED,
+                        "Maximum failed login attempts exceeded"
+                );
+
                 log.warn("Account locked due to repeated failed login attempts. UserId={}", user.getId());
             }
 
             userRepository.save(user);
 
             log.warn("Failed login attempt for email={}", request.email());
+
+            auditService.log(
+                    user.getId(),
+                    SecurityEventType.LOGIN_FAILED,
+                    "Invalid password"
+            );
 
             throw new AuthenticationException("Invalid email or password");
         }
@@ -171,6 +196,12 @@ public class AuthServiceImpl implements AuthService {
 
         log.info("User logged in successfully. UserId={}", user.getId());
 
+        auditService.log(
+                user.getId(),
+                SecurityEventType.LOGIN_SUCCESS,
+                "User logged in successfully"
+        );
+
         return new LoginResponse(accessToken, refreshToken, "Bearer", jwtProperties.accessTokenExpiration() / 1000);
     }
 
@@ -201,6 +232,12 @@ public class AuthServiceImpl implements AuthService {
             tokenSecurityService.revokeAllActiveRefreshTokens(userId);
 
             log.error("Refresh token reuse detected. UserId={}", userId);
+
+            auditService.log(
+                    userId,
+                    SecurityEventType.REFRESH_TOKEN_REUSE_DETECTED,
+                    "Refresh token reuse detected"
+            );
 
             throw new RefreshTokenException("Refresh token reuse detected. Please login again.");
         }
@@ -262,6 +299,12 @@ public class AuthServiceImpl implements AuthService {
 
         log.info("Refresh token rotated successfully. UserId={}", user.getId());
 
+        auditService.log(
+                user.getId(),
+                SecurityEventType.REFRESH_TOKEN_ROTATED,
+                "Refresh token rotated successfully"
+        );
+
         return new RefreshTokenResponse(
                 newAccessToken,
                 newRefreshToken,
@@ -287,6 +330,12 @@ public class AuthServiceImpl implements AuthService {
         refreshTokenRepository.save(storedToken);
 
         log.info("User logged out successfully. UserId={}", storedToken.getUser().getId());
+
+        auditService.log(
+                storedToken.getUser().getId(),
+                SecurityEventType.LOGOUT,
+                "User logged out successfully"
+        );
     }
 
     @Override
@@ -313,6 +362,12 @@ public class AuthServiceImpl implements AuthService {
         User user = verificationToken.getUser();
 
         user.setEmailVerified(true);
+
+        auditService.log(
+                user.getId(),
+                SecurityEventType.EMAIL_VERIFIED,
+                "Email verified successfully"
+        );
 
         user.setActive(true);
 
@@ -367,6 +422,12 @@ public class AuthServiceImpl implements AuthService {
 
         applicationEventPublisher.publishEvent(new PasswordResetEmailEvent(user.getEmail(), resetUrl));
 
+        auditService.log(
+                user.getId(),
+                SecurityEventType.PASSWORD_RESET_REQUESTED,
+                "Password reset requested"
+        );
+
         log.info("Password reset email sent. UserId={}", user.getId());
     }
 
@@ -409,6 +470,12 @@ public class AuthServiceImpl implements AuthService {
         String encodedPassword = passwordEncoder.encode(request.newPassword());
 
         user.setPasswordHash(encodedPassword);
+
+        auditService.log(
+                user.getId(),
+                SecurityEventType.PASSWORD_RESET_COMPLETED,
+                "Password reset completed successfully"
+        );
 
         user.setFailedLoginAttempts(0);
 
