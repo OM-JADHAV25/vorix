@@ -45,7 +45,7 @@ public class User extends BaseEntity {
 
     @Column(nullable = false)
     @Builder.Default
-    private boolean active = true;
+    private boolean active = false;
 
     @Column(name = "account_locked", nullable = false)
     @Builder.Default

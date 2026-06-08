@@ -1,5 +1,6 @@
 package com.vorix.authservice.service.impl;
 
+import com.vorix.authservice.config.AppProperties;
 import com.vorix.authservice.dto.request.LoginRequest;
 import com.vorix.authservice.dto.request.LogoutRequest;
 import com.vorix.authservice.dto.request.RefreshTokenRequest;
@@ -7,15 +8,14 @@ import com.vorix.authservice.dto.request.RegisterRequest;
 import com.vorix.authservice.dto.response.LoginResponse;
 import com.vorix.authservice.dto.response.RefreshTokenResponse;
 import com.vorix.authservice.dto.response.RegisterResponse;
+import com.vorix.authservice.entity.EmailVerificationToken;
 import com.vorix.authservice.entity.RefreshToken;
 import com.vorix.authservice.entity.Role;
 import com.vorix.authservice.entity.User;
 import com.vorix.authservice.enums.AuthProvider;
 import com.vorix.authservice.enums.RoleName;
-import com.vorix.authservice.exception.AuthenticationException;
-import com.vorix.authservice.exception.DuplicateResourceException;
-import com.vorix.authservice.exception.RefreshTokenException;
-import com.vorix.authservice.exception.ResourceNotFoundException;
+import com.vorix.authservice.exception.*;
+import com.vorix.authservice.repository.EmailVerificationTokenRepository;
 import com.vorix.authservice.repository.RefreshTokenRepository;
 import com.vorix.authservice.repository.RoleRepository;
 import com.vorix.authservice.repository.UserRepository;
@@ -24,7 +24,9 @@ import com.vorix.authservice.security.jwt.JwtService;
 import com.vorix.authservice.security.jwt.JwtTokenType;
 import com.vorix.authservice.security.token.TokenHashService;
 import com.vorix.authservice.service.AuthService;
+import com.vorix.authservice.service.EmailService;
 import com.vorix.authservice.service.TokenSecurityService;
+import com.vorix.authservice.service.VerificationTokenService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -53,6 +55,10 @@ public class AuthServiceImpl implements AuthService {
     private final TokenHashService tokenHashService;
     private final JwtProperties jwtProperties;
     private final TokenSecurityService tokenSecurityService;
+    private final VerificationTokenService verificationTokenService;
+    private final EmailService emailService;
+    private final EmailVerificationTokenRepository emailVerificationTokenRepository;
+    private final AppProperties appProperties;
 
     @Override
     public RegisterResponse register(RegisterRequest request) {
@@ -82,6 +88,11 @@ public class AuthServiceImpl implements AuthService {
                 .build();
 
         User savedUser = userRepository.save(user);
+
+        String verificationToken = verificationTokenService.createEmailVerificationToken(savedUser);
+
+        String verificationUrl = appProperties.frontendUrl() + "/verify-email?token=" + verificationToken;
+        emailService.sendVerificationEmail(savedUser.getEmail(), verificationUrl);
 
         return new RegisterResponse(
                 savedUser.getId(),
@@ -282,5 +293,43 @@ public class AuthServiceImpl implements AuthService {
         refreshTokenRepository.save(storedToken);
 
         log.info("User logged out successfully. UserId={}", storedToken.getUser().getId());
+    }
+
+    @Override
+    public void verifyEmail(String token) {
+
+        String tokenHash = tokenHashService.hash(token);
+
+        EmailVerificationToken verificationToken = emailVerificationTokenRepository
+                        .findByTokenHash(tokenHash)
+                        .orElseThrow(() -> new ResourceNotFoundException("Verification token not found"));
+
+        if (verificationToken.isConsumed()) {
+
+            throw new EmailVerificationException("Verification token already used");
+        }
+
+        Instant now = Instant.now();
+
+        if (verificationToken.getExpiresAt().isBefore(now)) {
+
+            throw new EmailVerificationException("Verification token expired");
+        }
+
+        User user = verificationToken.getUser();
+
+        user.setEmailVerified(true);
+
+        user.setActive(true);
+
+        verificationToken.setConsumed(true);
+
+        verificationToken.setVerifiedAt(now);
+
+        userRepository.save(user);
+
+        emailVerificationTokenRepository.save(verificationToken);
+
+        log.info("Email verified successfully. UserId={}", user.getId());
     }
 }
