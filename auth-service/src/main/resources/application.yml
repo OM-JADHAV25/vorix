@@ -19,8 +19,8 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: YOUR_RESPECTIVE_GMAIL
-    password: YOUR_RESPECTIVE_GMAIL_APP_PASSWORD
+    username: ${YOUR_GMAIL}
+    password: ${YOUR_GMAIL_APP_PASSWORD}
 
     properties:
       mail:
@@ -38,7 +38,11 @@ jwt:
   refresh-token-expiration: 604800000     # 7 days in milliseconds
 
 app:
-  frontend-url: http://localhost:3001
+  frontend-url: ${FRONTEND_URL}
+
+  scheduler:
+    token-cleanup:
+      cron: "0 0 * * * *"
 
 security:
   password-reset-token-expiration: 900000           # 15 minutes in milliseconds
