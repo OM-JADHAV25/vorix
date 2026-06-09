@@ -32,13 +32,6 @@ public class User extends BaseEntity {
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private AuthProvider provider;
-
-    @Column(name = "provider_id")
-    private String providerId;
-
     @Column(name = "email_verified", nullable = false)
     @Builder.Default
     private boolean emailVerified = false;
@@ -61,6 +54,15 @@ public class User extends BaseEntity {
     @Column(nullable = false)
     @Builder.Default
     private boolean deleted = false;
+
+    @OneToMany(
+            mappedBy = "user",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    @Builder.Default
+    private Set<UserAuthProvider> authProviders =
+            new HashSet<>();
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(

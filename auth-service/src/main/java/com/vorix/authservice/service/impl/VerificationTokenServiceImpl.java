@@ -33,7 +33,7 @@ public class VerificationTokenServiceImpl implements VerificationTokenService {
 
         String rawToken = generateSecureToken();
 
-        // log.info("EMAIL VERIFICATION TOKEN: {}", rawToken);
+         // log.info("EMAIL VERIFICATION TOKEN: {}", rawToken);
 
         Instant now = Instant.now();
 

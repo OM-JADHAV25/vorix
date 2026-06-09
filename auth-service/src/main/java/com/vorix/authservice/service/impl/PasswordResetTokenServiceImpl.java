@@ -31,7 +31,7 @@ public class PasswordResetTokenServiceImpl implements PasswordResetTokenService 
 
         String rawToken = generateSecureToken();
 
-        // log.warn("PASSWORD RESET TOKEN = {}", rawToken);
+         // log.warn("PASSWORD RESET TOKEN = {}", rawToken);
 
         String tokenHash = tokenHashService.hash(rawToken);
 

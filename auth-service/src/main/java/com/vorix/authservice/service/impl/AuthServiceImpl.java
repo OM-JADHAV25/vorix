@@ -74,12 +74,19 @@ public class AuthServiceImpl implements AuthService {
                         new ResourceNotFoundException("USER role not found"));
 
         User user = User.builder()
-                .username(request.username())
-                .email(request.email())
-                .passwordHash(passwordEncoder.encode(request.password()))
-                .provider(AuthProvider.LOCAL)
-                .roles(Set.of(userRole))
-                .build();
+                        .username(request.username())
+                        .email(request.email())
+                        .passwordHash(passwordEncoder.encode(request.password()))
+                        .roles(Set.of(userRole))
+                        .build();
+
+        UserAuthProvider localProvider = UserAuthProvider.builder()
+                                         .user(user)
+                                         .provider(AuthProvider.LOCAL)
+                                         .createdAt(Instant.now())
+                                         .build();
+
+        user.getAuthProviders().add(localProvider);
 
         User savedUser = userRepository.save(user);
 
@@ -251,9 +258,15 @@ public class AuthServiceImpl implements AuthService {
 
         User user = storedToken.getUser();
 
-        if (user.getProvider() != AuthProvider.LOCAL) {
+        boolean hasLocalProvider = user.getAuthProviders()
+                                       .stream()
+                                       .anyMatch(provider -> provider.getProvider() == AuthProvider.LOCAL);
 
-            throw new RefreshTokenException("Invalid authentication provider");
+        if (!hasLocalProvider) {
+
+            throw new RefreshTokenException(
+                    "Invalid authentication provider"
+            );
         }
 
         if (!user.isActive()) {
