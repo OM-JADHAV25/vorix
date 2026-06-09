@@ -172,4 +172,21 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }
+
+    @ExceptionHandler(GoogleAuthenticationException.class)
+    public ResponseEntity<ApiErrorResponse> handleGoogleAuthenticationException(GoogleAuthenticationException ex, HttpServletRequest request) {
+
+        ApiErrorResponse errorResponse =
+                new ApiErrorResponse(
+                        Instant.now(),
+                        HttpStatus.UNAUTHORIZED.value(),
+                        HttpStatus.UNAUTHORIZED.getReasonPhrase(),
+                        ex.getMessage(),
+                        request.getRequestURI()
+                );
+
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(errorResponse);
+    }
 }

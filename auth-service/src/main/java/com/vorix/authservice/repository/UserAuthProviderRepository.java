@@ -10,4 +10,6 @@ import java.util.UUID;
 public interface UserAuthProviderRepository extends JpaRepository<UserAuthProvider, UUID> {
 
     Optional<UserAuthProvider> findByProviderAndProviderId(AuthProvider provider, String providerId);
+
+    boolean existsByUserIdAndProvider(UUID userId, AuthProvider provider);
 }

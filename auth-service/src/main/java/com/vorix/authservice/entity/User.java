@@ -61,8 +61,7 @@ public class User extends BaseEntity {
             orphanRemoval = true
     )
     @Builder.Default
-    private Set<UserAuthProvider> authProviders =
-            new HashSet<>();
+    private Set<UserAuthProvider> authProviders = new HashSet<>();
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(

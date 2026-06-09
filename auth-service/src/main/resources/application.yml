@@ -44,6 +44,10 @@ app:
     token-cleanup:
       cron: "0 0 * * * *"
 
+google:
+  oauth:
+    client-id: ${GOOGLE_CLIENT_ID}
+
 security:
   password-reset-token-expiration: 900000           # 15 minutes in milliseconds
   email-verification-token-expiration: 86400000     # 24 hours in milliseconds

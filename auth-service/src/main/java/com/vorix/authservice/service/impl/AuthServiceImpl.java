@@ -53,6 +53,7 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final AuditService auditService;
+    private final GoogleAuthService googleAuthService;
 
     @Override
     public RegisterResponse register(RegisterRequest request) {
@@ -107,6 +108,12 @@ public class AuthServiceImpl implements AuthService {
                 savedUser.getEmail(),
                 "User registered successfully"
         );
+    }
+
+    @Override
+    public LoginResponse loginWithGoogle(GoogleLoginRequest request) {
+
+        return googleAuthService.authenticate(request);
     }
 
     @Override
@@ -407,6 +414,7 @@ public class AuthServiceImpl implements AuthService {
          * Never reveal whether email exists.
          */
 
+        // TODO: normalize forgot-password execution timing.
         if (user == null) {
 
             log.info("Password reset requested for non-existing email={}", request.email());
