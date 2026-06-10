@@ -61,6 +61,8 @@ public class GoogleAuthServiceImpl implements GoogleAuthService {
 
         User user = resolveUser(googleUser);
 
+        user = activateUnverifiedLocalUserIfEligible(user, googleUser);
+
         validateUser(user);
 
         return issueTokens(user);
@@ -93,6 +95,47 @@ public class GoogleAuthServiceImpl implements GoogleAuthService {
                 });
     }
 
+    private User activateUnverifiedLocalUserIfEligible(User user, GoogleUserInfo googleUser) {
+
+        if (user.isDeleted()) {
+            return user;
+        }
+
+        if (user.isAccountLocked()) {
+            return user;
+        }
+
+        if (user.isActive()) {
+            return user;
+        }
+
+        if (user.isEmailVerified()) {
+            return user;
+        }
+
+        if (!googleUser.emailVerified()) {
+            return user;
+        }
+
+        user.setEmailVerified(true);
+        user.setActive(true);
+
+        User updatedUser = userRepository.save(user);
+
+        auditService.log(
+                updatedUser.getId(),
+                SecurityEventType.EMAIL_VERIFIED,
+                "Local account activated through Google OAuth"
+        );
+
+        log.info(
+                "Activated local account through Google OAuth. UserId={}",
+                updatedUser.getId()
+        );
+
+        return updatedUser;
+    }
+
     private void linkGoogleProvider(User user, GoogleUserInfo googleUser) {
 
         UserAuthProvider provider = UserAuthProvider.builder()
@@ -104,7 +147,7 @@ public class GoogleAuthServiceImpl implements GoogleAuthService {
 
         try {
 
-            userAuthProviderRepository.save(provider);
+            userAuthProviderRepository.saveAndFlush(provider);
 
             log.info("Linked Google provider. UserId={}", user.getId());
 
@@ -116,7 +159,7 @@ public class GoogleAuthServiceImpl implements GoogleAuthService {
 
         } catch (DataIntegrityViolationException ex) {
 
-            log.warn("Google provider already linked. UserId={}", user.getId());
+            log.info("Google provider already linked. UserId={}", user.getId());
         }
     }
 
@@ -154,7 +197,7 @@ public class GoogleAuthServiceImpl implements GoogleAuthService {
 
         user.setLastLoginAt(now);
 
-        userRepository.save(user);
+        user.setLastLoginAt(now);
 
         Set<String> roles = user.getRoles()
                                 .stream()
