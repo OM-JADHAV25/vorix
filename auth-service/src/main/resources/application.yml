@@ -33,7 +33,7 @@ server:
   port: 8081
 
 jwt:
-  secret: ${JWT_SECRET}
+  secret: ${JWT_SECRET}}
   access-token-expiration: 900000         # 15 minutes in milliseconds
   refresh-token-expiration: 604800000     # 7 days in milliseconds
 
@@ -47,6 +47,11 @@ app:
 google:
   oauth:
     client-id: ${GOOGLE_CLIENT_ID}
+
+github:
+  oauth:
+    client-id: ${GITHUB_CLIENT_ID}
+    client-secret: ${GITHUB_CLIENT_SECRET}
 
 security:
   password-reset-token-expiration: 900000           # 15 minutes in milliseconds

@@ -5,6 +5,7 @@ import com.vorix.authservice.dto.response.LoginResponse;
 import com.vorix.authservice.dto.response.RefreshTokenResponse;
 import com.vorix.authservice.dto.response.RegisterResponse;
 import com.vorix.authservice.service.AuthService;
+import com.vorix.authservice.service.GitHubAuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -78,6 +79,14 @@ public class AuthController {
     public ResponseEntity<LoginResponse> loginWithGoogle(@Valid @RequestBody GoogleLoginRequest request) {
 
         LoginResponse response = authService.loginWithGoogle(request);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/oauth/github")
+    public ResponseEntity<LoginResponse> loginWithGitHub(@Valid @RequestBody GitHubLoginRequest request) {
+
+        LoginResponse response = authService.loginWithGitHub(request);
 
         return ResponseEntity.ok(response);
     }

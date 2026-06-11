@@ -1,6 +1,7 @@
 package com.vorix.authservice.service.impl;
 
-import com.vorix.authservice.dto.oauth.GoogleUserInfo;
+import com.vorix.authservice.service.GitHubUserProvisioningService;
+import com.vorix.authservice.dto.oauth.GitHubUserInfo;
 import com.vorix.authservice.entity.Role;
 import com.vorix.authservice.entity.User;
 import com.vorix.authservice.enums.RoleName;
@@ -9,7 +10,6 @@ import com.vorix.authservice.exception.ResourceNotFoundException;
 import com.vorix.authservice.repository.RoleRepository;
 import com.vorix.authservice.repository.UserRepository;
 import com.vorix.authservice.service.AuditService;
-import com.vorix.authservice.service.GoogleUserProvisioningService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -23,7 +23,7 @@ import java.util.UUID;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class GoogleUserProvisioningServiceImpl implements GoogleUserProvisioningService {
+public class GitHubUserProvisioningServiceImpl implements GitHubUserProvisioningService {
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
@@ -32,14 +32,14 @@ public class GoogleUserProvisioningServiceImpl implements GoogleUserProvisioning
 
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public User createGoogleUser(GoogleUserInfo googleUser) {
+    public User createGitHubUser(GitHubUserInfo gitHubUser) {
 
         Role userRole = roleRepository.findByName(RoleName.USER)
-                                      .orElseThrow(() -> new ResourceNotFoundException("USER role not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("USER role not found"));
 
         User user = User.builder()
-                        .email(googleUser.email())
-                        .username(generateUsername(googleUser.email()))
+                        .email(gitHubUser.email())
+                        .username(generateUsername(gitHubUser.email()))
                         .passwordHash(passwordEncoder.encode(UUID.randomUUID().toString()))
                         .emailVerified(true)
                         .active(true)
@@ -50,12 +50,12 @@ public class GoogleUserProvisioningServiceImpl implements GoogleUserProvisioning
 
         User savedUser = userRepository.save(user);
 
-        log.info("Created new Google user. UserId={}", savedUser.getId());
+        log.info("Created new GitHub user. UserId={}", savedUser.getId());
 
         auditService.log(
                 savedUser.getId(),
                 SecurityEventType.USER_REGISTERED,
-                "User registered via Google OAuth"
+                "User registered via GitHub OAuth"
         );
 
         return savedUser;
@@ -70,4 +70,5 @@ public class GoogleUserProvisioningServiceImpl implements GoogleUserProvisioning
                 .toString()
                 .substring(0, 8);
     }
+
 }

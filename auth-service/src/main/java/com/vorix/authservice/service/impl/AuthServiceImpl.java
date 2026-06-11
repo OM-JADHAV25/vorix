@@ -53,6 +53,7 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final ApplicationEventPublisher applicationEventPublisher;
     private final AuditService auditService;
+    private final GitHubAuthService gitHubAuthService;
     private final GoogleAuthService googleAuthService;
 
     @Override
@@ -124,6 +125,13 @@ public class AuthServiceImpl implements AuthService {
     public LoginResponse loginWithGoogle(GoogleLoginRequest request) {
 
         return googleAuthService.authenticate(request);
+    }
+
+    @Override
+    @Transactional
+    public LoginResponse loginWithGitHub(GitHubLoginRequest request) {
+
+        return gitHubAuthService.authenticate(request);
     }
 
     @Override
