@@ -21,6 +21,7 @@ import com.vorix.authservice.service.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,7 +36,6 @@ import static com.vorix.authservice.security.constants.SecurityConstants.MAX_FAI
 @Slf4j
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
@@ -56,6 +56,7 @@ public class AuthServiceImpl implements AuthService {
     private final GoogleAuthService googleAuthService;
 
     @Override
+    @Transactional
     public RegisterResponse register(RegisterRequest request) {
 
         if (userRepository.existsByEmail(request.email())) {
@@ -71,8 +72,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         Role userRole = roleRepository.findByName(RoleName.USER)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("USER role not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("USER role not found"));
 
         User user = User.builder()
                         .username(request.username())
@@ -89,7 +89,16 @@ public class AuthServiceImpl implements AuthService {
 
         user.getAuthProviders().add(localProvider);
 
-        User savedUser = userRepository.save(user);
+        User savedUser;
+
+        try {
+
+            savedUser = userRepository.saveAndFlush(user);
+
+        } catch (DataIntegrityViolationException ex) {
+
+            throw new DuplicateResourceException("Email or username already exists");
+        }
 
         String verificationToken = verificationTokenService.createEmailVerificationToken(savedUser);
 
@@ -111,12 +120,14 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    @Transactional
     public LoginResponse loginWithGoogle(GoogleLoginRequest request) {
 
         return googleAuthService.authenticate(request);
     }
 
     @Override
+    @Transactional
     public LoginResponse login(LoginRequest request) {
 
         User user = userRepository.findByEmail(request.email())
@@ -220,6 +231,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    @Transactional
     public RefreshTokenResponse refreshToken(RefreshTokenRequest request) {
 
         String refreshToken = request.refreshToken();
@@ -271,9 +283,7 @@ public class AuthServiceImpl implements AuthService {
 
         if (!hasLocalProvider) {
 
-            throw new RefreshTokenException(
-                    "Invalid authentication provider"
-            );
+            throw new RefreshTokenException("Invalid authentication provider");
         }
 
         if (!user.isActive()) {
@@ -334,6 +344,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    @Transactional
     public void logout(LogoutRequest request) {
 
         String refreshToken = request.refreshToken();
@@ -359,6 +370,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    @Transactional
     public void verifyEmail(String token) {
 
         String tokenHash = tokenHashService.hash(token);
@@ -409,56 +421,47 @@ public class AuthServiceImpl implements AuthService {
 
         User user = userRepository.findByEmail(request.email()).orElse(null);
 
+        boolean shouldProcess = user != null
+                                && user.isActive()
+                                && !user.isDeleted();
+
         /*
          * IMPORTANT:
          * Never reveal whether email exists.
          */
 
-        // TODO: normalize forgot-password execution timing.
-        if (user == null) {
+        // TODO:
+        // Normalize execution timing to mitigate
+        // forgot-password user enumeration attacks.
 
-            log.info("Password reset requested for non-existing email={}", request.email());
-            return;
+        if (shouldProcess) {
+
+            String rawToken = passwordResetTokenService.createPasswordResetToken(user);
+
+            String resetUrl = appProperties.frontendUrl()
+                            + "/reset-password?token="
+                            + rawToken;
+
+            applicationEventPublisher.publishEvent(new PasswordResetEmailEvent(user.getEmail(), resetUrl)
+            );
+
+            auditService.log(
+                    user.getId(),
+                    SecurityEventType.PASSWORD_RESET_REQUESTED,
+                    "Password reset requested"
+            );
+
+            log.info("Password reset email sent. UserId={}", user.getId());
         }
 
-        if (user.isDeleted()) {
-            return;
-        }
-
-        if (!user.isActive()) {
-            return;
-        }
-
-        log.info("User found: {}", user.getEmail());
-
-        String rawToken = passwordResetTokenService.createPasswordResetToken(user);
-
-        log.info("Token created");
-
-        String resetUrl = appProperties.frontendUrl()
-                        + "/reset-password?token="
-                        + rawToken;
-
-        log.info("About to send password reset email");
-
-        applicationEventPublisher.publishEvent(new PasswordResetEmailEvent(user.getEmail(), resetUrl));
-
-        auditService.log(
-                user.getId(),
-                SecurityEventType.PASSWORD_RESET_REQUESTED,
-                "Password reset requested"
-        );
-
-        log.info("Password reset email sent. UserId={}", user.getId());
+        log.info("Forgot password flow completed for email={}", request.email());
     }
 
     @Override
+    @Transactional
     public void resetPassword(ResetPasswordRequest request) {
 
-        String tokenHash =
-                tokenHashService.hash(
-                        request.token()
-                );
+        String tokenHash = tokenHashService.hash(request.token());
 
         PasswordResetToken resetToken = passwordResetTokenRepository
                                        .findByTokenHash(tokenHash)
