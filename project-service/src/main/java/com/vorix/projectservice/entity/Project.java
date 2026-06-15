@@ -4,6 +4,8 @@ import com.vorix.projectservice.entity.enums.ProjectStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.UUID;
+
 @Entity
 @Table(name = "projects")
 @Getter
@@ -12,6 +14,9 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Project extends BaseEntity {
+
+    @Column(nullable = false, updatable = false)
+    private UUID ownerId;
 
     @Column(nullable = false)
     private String projectName;

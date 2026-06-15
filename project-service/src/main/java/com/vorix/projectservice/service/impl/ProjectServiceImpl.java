@@ -18,6 +18,7 @@ import org.springframework.data.domain.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -31,7 +32,7 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     @Transactional
-    public ProjectResponse createProject(CreateProjectRequest request) {
+    public ProjectResponse createProject(CreateProjectRequest request, UUID ownerId) {
 
         log.info("Creating project with name: {}", request.projectName());
 
@@ -45,13 +46,13 @@ public class ProjectServiceImpl implements ProjectService {
 
         }
 
-        Project project =
-                Project.builder()
-                        .projectName(request.projectName())
-                        .description(request.description())
-                        .githubUrl(githubUrl)
-                        .status(ProjectStatus.ACTIVE)
-                        .build();
+        Project project = Project.builder()
+                                 .ownerId(ownerId)
+                                 .projectName(request.projectName())
+                                 .description(request.description())
+                                 .githubUrl(githubUrl)
+                                 .status(ProjectStatus.ACTIVE)
+                                 .build();
 
         Project savedProject = projectRepository.save(project);
 
@@ -62,12 +63,16 @@ public class ProjectServiceImpl implements ProjectService {
 
 
     @Override
-    public ProjectResponse getProjectById(Long id) {
+    public ProjectResponse getProjectById(Long id, UUID ownerId) {
 
         log.info("Fetching project with id: {}", id);
 
         Project project = projectRepository
-                        .findByIdAndStatusNot(id, ProjectStatus.DELETED)
+                        .findByIdAndOwnerIdAndStatusNot(
+                                id,
+                                ownerId,
+                                ProjectStatus.DELETED
+                        )
                         .orElseThrow(() -> {
 
                             log.warn("Project not found with id: {}", id);
@@ -80,6 +85,7 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     public Page<ProjectResponse> getAllProjects(
+            UUID ownerId,
             String search,
             ProjectStatus status,
             int page,
@@ -113,15 +119,21 @@ public class ProjectServiceImpl implements ProjectService {
 
         if (status != null) {
             projects = projectRepository
-                       .findByStatusAndProjectNameContainingIgnoreCase(status, searchTerm, pageable);
+                    .findByOwnerIdAndStatusAndProjectNameContainingIgnoreCase(
+                            ownerId,
+                            status,
+                            searchTerm,
+                            pageable
+                    );
 
         } else {
             projects = projectRepository
-                       .findByStatusNotAndProjectNameContainingIgnoreCase(
-                               ProjectStatus.DELETED,
-                               searchTerm,
-                               pageable
-                       );
+                    .findByOwnerIdAndStatusNotAndProjectNameContainingIgnoreCase(
+                            ownerId,
+                            ProjectStatus.DELETED,
+                            searchTerm,
+                            pageable
+                    );
         }
 
 
@@ -130,12 +142,16 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     @Transactional
-    public ProjectResponse updateProject(Long id, UpdateProjectRequest request) {
+    public ProjectResponse updateProject(Long id, UpdateProjectRequest request, UUID ownerId) {
 
         log.info("Updating project with id: {}", id);
 
         Project project = projectRepository
-                        .findByIdAndStatusNot(id, ProjectStatus.DELETED)
+                        .findByIdAndOwnerIdAndStatusNot(
+                                id,
+                                ownerId,
+                                ProjectStatus.DELETED
+                        )
                         .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
 
         String githubUrl = request.githubUrl();
@@ -159,6 +175,8 @@ public class ProjectServiceImpl implements ProjectService {
 
         project.setGithubUrl(githubUrl);
 
+        projectRepository.save(project);
+
         log.info("Project updated successfully with id: {}", project.getId());
 
         return projectMapper.toResponse(project);
@@ -166,12 +184,16 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     @Transactional
-    public void softDeleteProject(Long id) {
+    public void softDeleteProject(Long id, UUID ownerId) {
 
         log.info("Soft deleting project with id: {}", id);
 
         Project project = projectRepository
-                .findByIdAndStatusNot(id, ProjectStatus.DELETED)
+                .findByIdAndOwnerIdAndStatusNot(
+                        id,
+                        ownerId,
+                        ProjectStatus.DELETED
+                )
                 .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
 
         project.setStatus(ProjectStatus.DELETED);
@@ -186,12 +208,15 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     @Transactional
-    public void hardDeleteProject(Long id) {
+    public void hardDeleteProject(Long id, UUID ownerId) {
 
         log.warn("Hard deleting project with id: {}", id);
 
         Project project = projectRepository
-                        .findById(id)
+                        .findByIdAndOwnerId(
+                                id,
+                                ownerId
+                        )
                         .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
 
         projectRepository.delete(project);

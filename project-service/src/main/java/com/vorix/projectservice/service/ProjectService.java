@@ -7,14 +7,16 @@ import com.vorix.projectservice.entity.enums.ProjectStatus;
 import org.springframework.data.domain.Page;
 
 import java.util.List;
+import java.util.UUID;
 
 public interface ProjectService {
 
-    ProjectResponse createProject(CreateProjectRequest request);
+    ProjectResponse createProject(CreateProjectRequest request, UUID ownerId);
 
-    ProjectResponse getProjectById(Long id);
+    ProjectResponse getProjectById(Long id, UUID ownerId);
 
     Page<ProjectResponse> getAllProjects(
+            UUID ownerId,
             String search,
             ProjectStatus status,
             int page,
@@ -23,9 +25,13 @@ public interface ProjectService {
             String direction
     );
 
-    ProjectResponse updateProject(Long id, UpdateProjectRequest request);
+    ProjectResponse updateProject(
+            Long id,
+            UpdateProjectRequest request,
+            UUID ownerId
+    );
 
-    void softDeleteProject(Long id);
+    void softDeleteProject(Long id, UUID ownerId);
 
-    void hardDeleteProject(Long id);
+    void hardDeleteProject(Long id, UUID ownerId);
 }

@@ -11,7 +11,9 @@ import com.vorix.projectservice.repository.ProjectRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
+
+import java.util.Optional;
+import java.util.UUID;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -29,6 +31,8 @@ class ProjectServiceImplTest {
     private final ProjectMapper projectMapper = new ProjectMapper();
 
     private ProjectServiceImpl projectService;
+
+    private final UUID ownerId = UUID.randomUUID();
 
     @BeforeEach
     void setUp() {
@@ -49,17 +53,18 @@ class ProjectServiceImplTest {
         );
 
         Project project = Project.builder()
-                        .projectName(request.projectName())
-                        .description(request.description())
-                        .githubUrl(request.githubUrl())
-                        .status(ProjectStatus.ACTIVE)
-                        .build();
+                                 .ownerId(ownerId)
+                                 .projectName(request.projectName())
+                                 .description(request.description())
+                                 .githubUrl(request.githubUrl())
+                                 .status(ProjectStatus.ACTIVE)
+                                 .build();
 
         when(projectRepository.existsByGithubUrl(request.githubUrl())).thenReturn(false);
 
         when(projectRepository.save(any(Project.class))).thenReturn(project);
 
-        ProjectResponse response = projectService.createProject(request);
+        ProjectResponse response = projectService.createProject(request, ownerId);
 
         assertNotNull(response);
 
@@ -86,7 +91,7 @@ class ProjectServiceImplTest {
 
         when(projectRepository.existsByGithubUrl(request.githubUrl())).thenReturn(true);
 
-        assertThrows(DuplicateResourceException.class, () -> projectService.createProject(request));
+        assertThrows(DuplicateResourceException.class, () -> projectService.createProject(request, ownerId));
 
         verify(projectRepository, never()).save(any());
     }
@@ -102,9 +107,9 @@ class ProjectServiceImplTest {
                         .status(ProjectStatus.ACTIVE)
                         .build();
 
-        when(projectRepository.findByIdAndStatusNot(1L, ProjectStatus.DELETED)).thenReturn(java.util.Optional.of(project));
+        when(projectRepository.findByIdAndOwnerIdAndStatusNot(1L, ownerId, ProjectStatus.DELETED)).thenReturn(Optional.of(project));
 
-        ProjectResponse response = projectService.getProjectById(1L);
+        ProjectResponse response = projectService.getProjectById(1L, ownerId);
 
         assertNotNull(response);
 
@@ -115,9 +120,9 @@ class ProjectServiceImplTest {
     @Test
     void shouldThrowExceptionWhenProjectNotFound() {
 
-        when(projectRepository.findByIdAndStatusNot(1L, ProjectStatus.DELETED)).thenReturn(java.util.Optional.empty());
+        when(projectRepository.findByIdAndOwnerIdAndStatusNot(1L, ownerId, ProjectStatus.DELETED)).thenReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class, () -> projectService.getProjectById(1L));
+        assertThrows(ResourceNotFoundException.class, () -> projectService.getProjectById(1L, ownerId));
     }
 
 
@@ -129,9 +134,9 @@ class ProjectServiceImplTest {
                         .status(ProjectStatus.ACTIVE)
                         .build();
 
-        when(projectRepository.findByIdAndStatusNot(1L, ProjectStatus.DELETED)).thenReturn(java.util.Optional.of(project));
+        when(projectRepository.findByIdAndOwnerIdAndStatusNot(1L, ownerId, ProjectStatus.DELETED)).thenReturn(Optional.of(project));
 
-        projectService.softDeleteProject(1L);
+        projectService.softDeleteProject(1L, ownerId);
 
         assertEquals(ProjectStatus.DELETED, project.getStatus());
 
@@ -147,9 +152,9 @@ class ProjectServiceImplTest {
                         .status(ProjectStatus.ACTIVE)
                         .build();
 
-        when(projectRepository.findById(1L)).thenReturn(java.util.Optional.of(project));
+        when(projectRepository.findByIdAndOwnerId(1L, ownerId)).thenReturn(Optional.of(project));
 
-        projectService.hardDeleteProject(1L);
+        projectService.hardDeleteProject(1L, ownerId);
 
         verify(projectRepository).delete(project);
     }

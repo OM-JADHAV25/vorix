@@ -6,7 +6,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 public interface ProjectRepository extends JpaRepository<Project, Long> {
 
@@ -14,19 +16,27 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
 
     Optional<Project> findByGithubUrl(String githubUrl);
 
-    Page<Project> findByStatusNot(ProjectStatus status, Pageable pageable);
+    List<Project> findByOwnerIdAndStatusNot(UUID ownerId, ProjectStatus status);
 
-    Optional<Project> findByIdAndStatusNot(Long id, ProjectStatus status);
+    Optional<Project> findByIdAndOwnerIdAndStatusNot(
+            Long id,
+            UUID ownerId,
+            ProjectStatus status
+    );
 
-    Page<Project> findByStatusNotAndProjectNameContainingIgnoreCase(
-            ProjectStatus excludedStatus,
-            String projectName,
+    Optional<Project> findByIdAndOwnerId(Long id, UUID ownerId);
+
+    Page<Project> findByOwnerIdAndStatusAndProjectNameContainingIgnoreCase(
+            UUID ownerId,
+            ProjectStatus status,
+            String search,
             Pageable pageable
     );
 
-    Page<Project> findByStatusAndProjectNameContainingIgnoreCase(
+    Page<Project> findByOwnerIdAndStatusNotAndProjectNameContainingIgnoreCase(
+            UUID ownerId,
             ProjectStatus status,
-            String projectName,
+            String search,
             Pageable pageable
     );
 }
