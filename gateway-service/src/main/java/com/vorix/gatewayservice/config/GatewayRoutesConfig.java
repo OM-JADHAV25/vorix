@@ -14,6 +14,9 @@ public class GatewayRoutesConfig {
                 .route("auth-service", r -> r
                         .path("/api/v1/auth/**")
                         .uri("http://localhost:8081"))
+                .route("project-service", r -> r
+                        .path("/api/v1/projects/**")
+                        .uri("http://localhost:8082"))
                 .build();
 
     }
