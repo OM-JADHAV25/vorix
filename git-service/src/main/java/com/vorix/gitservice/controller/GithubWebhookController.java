@@ -1,5 +1,6 @@
 package com.vorix.gitservice.controller;
 
+import com.vorix.gitservice.processor.WebhookDispatcher;
 import tools.jackson.databind.JsonNode;
 import com.vorix.gitservice.service.WebhookEventService;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 public class GithubWebhookController {
 
     private final WebhookEventService webhookEventService;
+    private final WebhookDispatcher webhookDispatcher;
 
     @PostMapping
     public ResponseEntity<Void> handleWebhook(
@@ -27,6 +29,8 @@ public class GithubWebhookController {
         log.debug("Payload: {}", payload);
 
         webhookEventService.saveWebhookEvent(deliveryId, eventType, payload);
+
+        webhookDispatcher.dispatch(eventType, payload);
 
         return ResponseEntity.ok().build();
     }
