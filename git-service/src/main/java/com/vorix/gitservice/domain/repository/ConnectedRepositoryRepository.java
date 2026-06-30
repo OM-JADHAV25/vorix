@@ -1,7 +1,6 @@
 package com.vorix.gitservice.domain.repository;
 
 import com.vorix.gitservice.domain.model.ConnectedRepository;
-import com.vorix.gitservice.domain.model.GithubConnection;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -14,9 +13,7 @@ public interface ConnectedRepositoryRepository extends JpaRepository<ConnectedRe
 
     List<ConnectedRepository> findByProjectId(UUID projectId);
 
-    List<ConnectedRepository> findByGithubConnectionId(UUID githubConnectionId);
-
-    Optional<GithubConnection> findByInstallationId(Long installationId);
+    List<ConnectedRepository> findByInstallation_GithubInstallationId(Long installationId);
 
     boolean existsByGithubRepositoryId(Long githubRepositoryId);
 

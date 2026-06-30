@@ -1,11 +1,11 @@
 package com.vorix.gitservice.service.impl;
 
 import com.vorix.gitservice.domain.model.ConnectedRepository;
-import com.vorix.gitservice.domain.model.GithubConnection;
 import com.vorix.gitservice.domain.repository.ConnectedRepositoryRepository;
-import com.vorix.gitservice.domain.repository.GithubConnectionRepository;
 import com.vorix.gitservice.dto.github.InstallationRepositoriesPayload;
 import com.vorix.gitservice.service.ConnectedRepositoryService;
+import com.vorix.gitservice.domain.model.GitHubInstallation;
+import com.vorix.gitservice.domain.repository.GitHubInstallationRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,13 +22,13 @@ import java.util.UUID;
 public class ConnectedRepositoryServiceImpl implements ConnectedRepositoryService {
 
     private final ConnectedRepositoryRepository connectedRepositoryRepository;
-    private final GithubConnectionRepository githubConnectionRepository;
+    private final GitHubInstallationRepository gitHubInstallationRepository;
 
     @Override
     public void repositoriesAdded(InstallationRepositoriesPayload payload) {
 
-        GithubConnection githubConnection = githubConnectionRepository.findByInstallationId(payload.installationId())
-                        .orElseThrow(() -> new IllegalStateException("GitHub connection not found for installation: " + payload.installationId()));
+        GitHubInstallation installation = gitHubInstallationRepository.findByGithubInstallationId(payload.installationId())
+                        .orElseThrow(() -> new IllegalStateException("GitHub installation not found: " + payload.installationId()));
 
         List<ConnectedRepository> repositoriesToSave = new ArrayList<>();
 
@@ -42,15 +42,21 @@ public class ConnectedRepositoryServiceImpl implements ConnectedRepositoryServic
 
             String owner = repository.fullName().split("/")[0];
 
-            ConnectedRepository connectedRepository =
-                    ConnectedRepository.builder()
+            ConnectedRepository connectedRepository = ConnectedRepository.builder()
                             .projectId(UUID.randomUUID())      // Temporary
-                            .githubConnection(githubConnection)
+                            .installation(installation)
                             .githubRepositoryId(repository.repositoryId())
                             .owner(owner)
                             .repositoryName(repository.repositoryName())
                             .fullName(repository.fullName())
+                            .isPrivate(repository.isPrivate())
                             .defaultBranch(null)
+                            .visibility(null)
+                            .cloneUrl(null)
+                            .htmlUrl(null)
+                            .primaryLanguage(null)
+                            .archived(false)
+                            .disabled(false)
                             .webhookId(null)
                             .isActive(true)
                             .build();

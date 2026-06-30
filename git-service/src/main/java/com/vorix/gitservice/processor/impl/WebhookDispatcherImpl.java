@@ -16,15 +16,7 @@ public class WebhookDispatcherImpl implements WebhookDispatcher {
     private final ObjectMapper objectMapper;
 
     private final InstallationProcessor installationProcessor;
-    private final InstallationRepositoriesProcessor installationRepositoriesProcessor;
-    private final PushProcessor pushProcessor;
-    private final PullRequestProcessor pullRequestProcessor;
-    private final IssuesProcessor issuesProcessor;
-    private final IssueCommentProcessor issueCommentProcessor;
-    private final PullRequestReviewProcessor pullRequestReviewProcessor;
-    private final PullRequestReviewCommentProcessor pullRequestReviewCommentProcessor;
-    private final CheckRunProcessor checkRunProcessor;
-    private final CheckSuiteProcessor checkSuiteProcessor;
+    private final RepositorySyncProcessor repositorySyncProcessor;
 
     @Override
     public void dispatch(String eventType, String webhookPayload) {
@@ -41,25 +33,9 @@ public class WebhookDispatcherImpl implements WebhookDispatcher {
 
                 case "installation" -> installationProcessor.process(webhookPayload, action);
 
-                case "installation_repositories" -> installationRepositoriesProcessor.process(webhookPayload, action);
+                case "installation_repositories" -> repositorySyncProcessor.process(webhookPayload);
 
-                case "push" -> pushProcessor.process(webhookPayload);
-
-                case "pull_request" -> pullRequestProcessor.process(webhookPayload, action);
-
-                case "issues" -> issuesProcessor.process(webhookPayload, action);
-
-                case "issue_comment" -> issueCommentProcessor.process(webhookPayload, action);
-
-                case "pull_request_review" -> pullRequestReviewProcessor.process(webhookPayload, action);
-
-                case "pull_request_review_comment" -> pullRequestReviewCommentProcessor.process(webhookPayload, action);
-
-                case "check_run" -> checkRunProcessor.process(webhookPayload, action);
-
-                case "check_suite" -> checkSuiteProcessor.process(webhookPayload, action);
-
-                default -> log.info("Ignoring unsupported GitHub Event '{}'", eventType);
+                default -> log.info("GitHub Event '{}' is not implemented yet.", eventType);
             }
 
         } catch (Exception ex) {

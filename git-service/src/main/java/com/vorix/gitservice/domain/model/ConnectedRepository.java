@@ -23,8 +23,8 @@ public class ConnectedRepository extends BaseEntity {
     private UUID projectId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "github_connection_id", nullable = false)
-    private GithubConnection githubConnection;
+    @JoinColumn(name = "installation_id", nullable = false)
+    private GitHubInstallation installation;
 
     @Column(name = "github_repository_id", nullable = false, unique = true)
     private Long githubRepositoryId;
