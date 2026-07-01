@@ -1,11 +1,13 @@
 package com.vorix.gitservice.service.impl;
 
 import com.vorix.gitservice.domain.model.ConnectedRepository;
+import com.vorix.gitservice.domain.model.github.RepositoryMetadata;
 import com.vorix.gitservice.domain.repository.ConnectedRepositoryRepository;
 import com.vorix.gitservice.dto.github.InstallationRepositoriesPayload;
 import com.vorix.gitservice.service.ConnectedRepositoryService;
 import com.vorix.gitservice.domain.model.GitHubInstallation;
 import com.vorix.gitservice.domain.repository.GitHubInstallationRepository;
+import com.vorix.gitservice.service.github.repository.GitHubRepositoryService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +25,7 @@ public class ConnectedRepositoryServiceImpl implements ConnectedRepositoryServic
 
     private final ConnectedRepositoryRepository connectedRepositoryRepository;
     private final GitHubInstallationRepository gitHubInstallationRepository;
+    private final GitHubRepositoryService gitHubRepositoryService;
 
     @Override
     public void repositoriesAdded(InstallationRepositoriesPayload payload) {
@@ -42,24 +45,32 @@ public class ConnectedRepositoryServiceImpl implements ConnectedRepositoryServic
 
             String owner = repository.fullName().split("/")[0];
 
+            RepositoryMetadata metadata = gitHubRepositoryService.getRepository(
+                            payload.installationId(),
+                            owner,
+                            repository.repositoryName()
+            );
+
             ConnectedRepository connectedRepository = ConnectedRepository.builder()
-                            .projectId(UUID.randomUUID())      // Temporary
-                            .installation(installation)
-                            .githubRepositoryId(repository.repositoryId())
-                            .owner(owner)
-                            .repositoryName(repository.repositoryName())
-                            .fullName(repository.fullName())
-                            .isPrivate(repository.isPrivate())
-                            .defaultBranch(null)
-                            .visibility(null)
-                            .cloneUrl(null)
-                            .htmlUrl(null)
-                            .primaryLanguage(null)
-                            .archived(false)
-                            .disabled(false)
-                            .webhookId(null)
-                            .isActive(true)
-                            .build();
+                    .projectId(UUID.randomUUID())     // Temporary until Project Service
+                    .installation(installation)
+                    .githubRepositoryId(metadata.providerRepositoryId())
+                    .owner(metadata.owner())
+                    .repositoryName(metadata.repositoryName())
+                    .fullName(metadata.fullName())
+                    .isPrivate(metadata.isPrivate())
+                    .visibility(metadata.visibility())
+                    .defaultBranch(metadata.defaultBranch())
+                    .cloneUrl(metadata.cloneUrl())
+                    .htmlUrl(metadata.htmlUrl())
+                    .primaryLanguage(metadata.language())
+                    .archived(metadata.archived())
+                    .disabled(metadata.disabled())
+                    .githubCreatedAt(metadata.createdAt())
+                    .githubUpdatedAt(metadata.updatedAt())
+                    .webhookId(null)
+                    .isActive(true)
+                    .build();
 
             repositoriesToSave.add(connectedRepository);
         }
