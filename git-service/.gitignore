@@ -49,3 +49,6 @@ spring.log
 
 ### Generated Files ###
 dependency-reduced-pom.xml
+
+### GitHub Private key ###
+src/main/resources/github/private-key.pem
