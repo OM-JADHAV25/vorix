@@ -7,7 +7,7 @@ import com.vorix.gitservice.dto.github.InstallationRepositoriesPayload;
 import com.vorix.gitservice.service.ConnectedRepositoryService;
 import com.vorix.gitservice.domain.model.GitHubInstallation;
 import com.vorix.gitservice.domain.repository.GitHubInstallationRepository;
-import com.vorix.gitservice.service.github.repository.GitHubRepositoryService;
+import com.vorix.gitservice.service.github.repository.RepositoryService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,7 +25,7 @@ public class ConnectedRepositoryServiceImpl implements ConnectedRepositoryServic
 
     private final ConnectedRepositoryRepository connectedRepositoryRepository;
     private final GitHubInstallationRepository gitHubInstallationRepository;
-    private final GitHubRepositoryService gitHubRepositoryService;
+    private final RepositoryService repositoryService;
 
     @Override
     public void repositoriesAdded(InstallationRepositoriesPayload payload) {
@@ -45,7 +45,7 @@ public class ConnectedRepositoryServiceImpl implements ConnectedRepositoryServic
 
             String owner = repository.fullName().split("/")[0];
 
-            RepositoryMetadata metadata = gitHubRepositoryService.getRepository(
+            RepositoryMetadata metadata = repositoryService.getRepository(
                             payload.installationId(),
                             owner,
                             repository.repositoryName()
