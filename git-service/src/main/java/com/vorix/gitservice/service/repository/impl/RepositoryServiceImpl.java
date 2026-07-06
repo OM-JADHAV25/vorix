@@ -1,6 +1,5 @@
-package com.vorix.gitservice.service.github.repository.impl;
+package com.vorix.gitservice.service.repository.impl;
 
-import com.vorix.gitservice.client.GitHubClient;
 import com.vorix.gitservice.domain.model.github.RepositoryMetadata;
 import com.vorix.gitservice.domain.model.repository.RepositoryFile;
 import com.vorix.gitservice.dto.github.content.GitHubContentResponse;
@@ -8,7 +7,7 @@ import com.vorix.gitservice.dto.github.repository.GitHubRepositoryResponse;
 import com.vorix.gitservice.mapper.GitHubContentMapper;
 import com.vorix.gitservice.mapper.GitHubRepositoryMapper;
 import com.vorix.gitservice.service.github.GitHubApiGateway;
-import com.vorix.gitservice.service.github.repository.RepositoryService;
+import com.vorix.gitservice.service.repository.RepositoryService;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,7 +36,7 @@ public class RepositoryServiceImpl implements RepositoryService {
     }
 
     @Override
-    public RepositoryFile getFileContent(
+    public RepositoryFile getRepositoryFile(
             Long installationId,
             String owner,
             String repository,

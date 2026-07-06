@@ -15,6 +15,8 @@ public interface ConnectedRepositoryRepository extends JpaRepository<ConnectedRe
 
     List<ConnectedRepository> findByInstallation_GithubInstallationId(Long installationId);
 
+    Optional<ConnectedRepository> findByInstallation_GithubInstallationIdAndGithubRepositoryId(Long installationId, Long githubRepositoryId);
+
     boolean existsByGithubRepositoryId(Long githubRepositoryId);
 
     void deleteByGithubRepositoryId(Long githubRepositoryId);

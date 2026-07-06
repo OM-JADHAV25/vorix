@@ -7,7 +7,7 @@ import com.vorix.gitservice.dto.github.InstallationRepositoriesPayload;
 import com.vorix.gitservice.service.ConnectedRepositoryService;
 import com.vorix.gitservice.domain.model.GitHubInstallation;
 import com.vorix.gitservice.domain.repository.GitHubInstallationRepository;
-import com.vorix.gitservice.service.github.repository.RepositoryService;
+import com.vorix.gitservice.service.repository.RepositoryService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -93,5 +93,18 @@ public class ConnectedRepositoryServiceImpl implements ConnectedRepositoryServic
 
             log.info("Removed repository {}", repository.fullName());
         }
+    }
+
+    @Override
+    public ConnectedRepository getConnectedRepository(Long installationId, Long githubRepositoryId) {
+
+        return connectedRepositoryRepository
+                .findByInstallation_GithubInstallationIdAndGithubRepositoryId(installationId, githubRepositoryId)
+                .orElseThrow(() -> new IllegalStateException(
+                        "Connected repository not found. Installation="
+                                + installationId
+                                + ", Repository="
+                                + githubRepositoryId
+                ));
     }
 }
