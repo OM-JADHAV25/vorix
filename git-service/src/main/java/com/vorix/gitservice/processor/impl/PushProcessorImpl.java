@@ -3,13 +3,11 @@ package com.vorix.gitservice.processor.impl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vorix.gitservice.domain.model.ConnectedRepository;
 import com.vorix.gitservice.domain.model.analysis.AnalysisContext;
-import com.vorix.gitservice.domain.model.event.AnalysisRequestedEvent;
 import com.vorix.gitservice.dto.github.webhook.PushWebhookPayload;
-import com.vorix.gitservice.service.event.AnalysisEventPublisher;
+import com.vorix.gitservice.service.analysis.AnalysisRequestService;
 import com.vorix.gitservice.processor.PushProcessor;
 import com.vorix.gitservice.service.ConnectedRepositoryService;
 import com.vorix.gitservice.service.analysis.AnalysisContextBuilder;
-import com.vorix.gitservice.service.event.AnalysisEventFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -22,8 +20,7 @@ public class PushProcessorImpl implements PushProcessor {
     private final ObjectMapper objectMapper;
     private final ConnectedRepositoryService connectedRepositoryService;
     private final AnalysisContextBuilder analysisContextBuilder;
-    private final AnalysisEventFactory analysisEventFactory;
-    private final AnalysisEventPublisher analysisEventPublisher;
+    private final AnalysisRequestService analysisRequestService;
 
     @Override
     public void process(String webhookPayload) {
@@ -43,9 +40,7 @@ public class PushProcessorImpl implements PushProcessor {
                             payload.after()
                     );
 
-            AnalysisRequestedEvent event = analysisEventFactory.create(analysisContext);
-
-            analysisEventPublisher.publish(event);
+            analysisRequestService.requestAnalysis(analysisContext);
 
             log.info("Published analysis request for repository '{}'", payload.repository().fullName());
 

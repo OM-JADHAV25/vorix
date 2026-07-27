@@ -1,6 +1,6 @@
 package com.vorix.gitservice.domain.model;
 
-import tools.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.vorix.gitservice.domain.enums.WebhookStatus;
 import jakarta.persistence.*;
 import lombok.*;

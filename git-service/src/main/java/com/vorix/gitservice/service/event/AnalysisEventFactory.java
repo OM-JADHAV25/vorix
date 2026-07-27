@@ -12,6 +12,11 @@ public class AnalysisEventFactory {
 
     public AnalysisRequestedEvent create(AnalysisContext context) {
 
-        return new AnalysisRequestedEvent(UUID.randomUUID(), Instant.now(), context);
+        return new AnalysisRequestedEvent(
+                UUID.randomUUID(),
+                "ANALYSIS_REQUESTED",
+                Instant.now(),
+                context
+        );
     }
 }

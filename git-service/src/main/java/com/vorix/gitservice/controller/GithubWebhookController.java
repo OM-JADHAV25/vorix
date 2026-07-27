@@ -1,7 +1,7 @@
 package com.vorix.gitservice.controller;
 
 import com.vorix.gitservice.processor.WebhookDispatcher;
-import tools.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.vorix.gitservice.service.WebhookEventService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

@@ -1,6 +1,6 @@
 package com.vorix.gitservice.dto.request;
 
-import tools.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.Builder;
 
 @Builder

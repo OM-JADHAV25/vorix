@@ -1,7 +1,7 @@
 package com.vorix.gitservice.processor.impl;
 
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.vorix.gitservice.processor.*;
 import com.vorix.gitservice.processor.WebhookDispatcher;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +17,7 @@ public class WebhookDispatcherImpl implements WebhookDispatcher {
 
     private final InstallationProcessor installationProcessor;
     private final RepositorySyncProcessor repositorySyncProcessor;
+    private final PullRequestProcessor pullRequestProcessor;
 
     @Override
     public void dispatch(String eventType, String webhookPayload) {
@@ -34,6 +35,8 @@ public class WebhookDispatcherImpl implements WebhookDispatcher {
                 case "installation" -> installationProcessor.process(webhookPayload, action);
 
                 case "installation_repositories" -> repositorySyncProcessor.process(webhookPayload);
+
+                case "pull_request" -> pullRequestProcessor.process(webhookPayload, action);
 
                 default -> log.info("GitHub Event '{}' is not implemented yet.", eventType);
             }

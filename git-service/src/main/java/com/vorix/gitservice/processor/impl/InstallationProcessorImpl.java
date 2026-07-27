@@ -1,7 +1,7 @@
 package com.vorix.gitservice.processor.impl;
 
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.vorix.gitservice.dto.github.GitHubInstallationPayload;
 import com.vorix.gitservice.processor.InstallationProcessor;
 import com.vorix.gitservice.service.GitHubInstallationService;

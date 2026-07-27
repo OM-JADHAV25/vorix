@@ -1,6 +1,6 @@
 package com.vorix.gitservice.processor.impl;
 
-import tools.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vorix.gitservice.dto.github.GitHubRepositorySyncPayload;
 import com.vorix.gitservice.processor.RepositorySyncProcessor;
 import com.vorix.gitservice.service.RepositorySyncService;

@@ -7,6 +7,7 @@ import java.util.UUID;
 
 public record AnalysisRequestedEvent(
         UUID eventId,
+        String eventVersion,
         Instant createdAt,
         AnalysisContext context
 ) {
