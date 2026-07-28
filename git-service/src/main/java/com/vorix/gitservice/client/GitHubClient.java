@@ -15,6 +15,18 @@ public interface GitHubClient {
             Class<R> responseType
     );
 
+    <T, R> R patch(
+            String uri,
+            String accessToken,
+            T request,
+            Class<R> responseType
+    );
+
+    void delete(
+            String uri,
+            String accessToken
+    );
+
     <R> R postWithJwt(
             String uri,
             String jwt,

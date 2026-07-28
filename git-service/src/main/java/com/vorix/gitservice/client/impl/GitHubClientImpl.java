@@ -43,6 +43,35 @@ public class GitHubClientImpl implements GitHubClient {
     }
 
     @Override
+    public <T, R> R patch(
+            String uri,
+            String accessToken,
+            T request,
+            Class<R> responseType
+    ) {
+
+        return gitHubRestClient.patch()
+                .uri(uri)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
+                .body(request)
+                .retrieve()
+                .body(responseType);
+    }
+
+    @Override
+    public void delete(
+            String uri,
+            String accessToken
+    ) {
+
+        gitHubRestClient.delete()
+                .uri(uri)
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
+                .retrieve()
+                .toBodilessEntity();
+    }
+
+    @Override
     public <R> R postWithJwt(
             String uri,
             String jwt,

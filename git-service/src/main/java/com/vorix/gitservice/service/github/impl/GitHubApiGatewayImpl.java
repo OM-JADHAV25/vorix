@@ -1,6 +1,9 @@
 package com.vorix.gitservice.service.github.impl;
 
 import com.vorix.gitservice.client.GitHubClient;
+import com.vorix.gitservice.dto.github.checks.CheckRunResponse;
+import com.vorix.gitservice.dto.github.checks.CreateCheckRunRequest;
+import com.vorix.gitservice.dto.github.checks.UpdateCheckRunRequest;
 import com.vorix.gitservice.dto.github.commit.GitHubCommitResponse;
 import com.vorix.gitservice.dto.github.compare.GitHubCompareResponse;
 import com.vorix.gitservice.dto.github.content.GitHubContentResponse;
@@ -32,8 +35,7 @@ public class GitHubApiGatewayImpl implements GitHubApiGateway {
                 repository
         );
 
-        String accessToken =
-                installationTokenService.getAccessToken(installationId);
+        String accessToken = getAccessToken(installationId);
 
         return gitHubClient.get(
                 "/repos/%s/%s".formatted(owner, repository),
@@ -57,8 +59,7 @@ public class GitHubApiGatewayImpl implements GitHubApiGateway {
                 repository
         );
 
-        String accessToken =
-                installationTokenService.getAccessToken(installationId);
+        String accessToken = getAccessToken(installationId);
 
         return gitHubClient.get(
                 "/repos/%s/%s/commits/%s".formatted(owner, repository, sha),
@@ -76,7 +77,7 @@ public class GitHubApiGatewayImpl implements GitHubApiGateway {
             String head
     ) {
 
-        String accessToken = installationTokenService.getAccessToken(installationId);
+        String accessToken = getAccessToken(installationId);
 
         return gitHubClient.get(
                 "/repos/%s/%s/compare/%s...%s".formatted(owner, repository, base, head),
@@ -94,7 +95,7 @@ public class GitHubApiGatewayImpl implements GitHubApiGateway {
             String ref
     ) {
 
-        String token = installationTokenService.getAccessToken(installationId);
+        String token = getAccessToken(installationId);
 
         return gitHubClient.get(
 
@@ -102,5 +103,64 @@ public class GitHubApiGatewayImpl implements GitHubApiGateway {
                 token,
                 GitHubContentResponse.class
         );
+    }
+
+    @Override
+    public CheckRunResponse createCheckRun(
+            Long installationId,
+            String owner,
+            String repository,
+            CreateCheckRunRequest request
+    ) {
+
+        log.info(
+                "Creating GitHub Check Run for repository {}/{}",
+                owner,
+                repository
+        );
+
+        String accessToken = getAccessToken(installationId);
+
+        return gitHubClient.post(
+                "/repos/%s/%s/check-runs".formatted(owner, repository),
+                accessToken,
+                request,
+                CheckRunResponse.class
+        );
+    }
+
+    @Override
+    public CheckRunResponse updateCheckRun(
+            Long installationId,
+            String owner,
+            String repository,
+            Long checkRunId,
+            UpdateCheckRunRequest request
+    ) {
+
+        log.info(
+                "Updating GitHub Check Run {} for repository {}/{}",
+                checkRunId,
+                owner,
+                repository
+        );
+
+        String accessToken = getAccessToken(installationId);
+
+        return gitHubClient.post(
+                "/repos/%s/%s/check-runs/%d".formatted(
+                        owner,
+                        repository,
+                        checkRunId
+                ),
+                accessToken,
+                request,
+                CheckRunResponse.class
+        );
+    }
+
+    private String getAccessToken(Long installationId) {
+
+        return installationTokenService.getAccessToken(installationId);
     }
 }
