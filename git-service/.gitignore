@@ -52,3 +52,7 @@ dependency-reduced-pom.xml
 
 ### GitHub Private key ###
 src/main/resources/github/private-key.pem
+
+# GitHub App Private Keys
+*.pem
+*.key
